@@ -1,0 +1,137 @@
+{
+  "sword":{
+    "rarity": "diamond",
+    "item_type": "weapon",
+    "damage": 40,
+    "crit_chance": 0.05,
+    "proj_dist": null,
+    "defense": null,
+    "armor_type": null
+  },
+  "fire":{
+    "rarity": "silver",
+    "item_type": "weapon",
+    "damage": 5,
+    "crit_chance": 0.1,
+    "proj_dist": 20,
+    "defense": null,
+    "armor_type": null
+  },
+  "lightning":{
+    "rarity": "gold",
+    "item_type": "weapon",
+    "damage": 10,
+    "crit_chance": 0.2,
+    "proj_dist": 10,
+    "defense": null,
+    "armor_type": null
+  },
+  "basic_head":{
+    "rarity": "bronze",
+    "item_type": "armor",
+    "damage": null,
+    "crit_chance": null,
+    "proj_dist": null,
+    "defense": 1,
+    "armor_type": "head"
+  },
+  "basic_chest":{
+    "rarity": "bronze",
+    "item_type": "armor",
+    "damage": null,
+    "crit_chance": null,
+    "proj_dist": null,
+    "defense": 2,
+    "armor_type": "chest"
+  },
+  "basic_legs":{
+    "rarity": "bronze",
+    "item_type": "armor",
+    "damage": null,
+    "crit_chance": null,
+    "proj_dist": null,
+    "defense": 1,
+    "armor_type": "legs"
+  },
+  "basic_feet":{
+    "rarity": "bronze",
+    "item_type": "armor",
+    "damage": null,
+    "crit_chance": null,
+    "proj_dist": null,
+    "defense": 1,
+    "armor_type": "feet"
+  },
+  "no_item":{
+    "rarity": "None",
+    "item_type": null,
+    "damage": null,
+    "crit_chance": null,
+    "proj_dist": null,
+    "defense": null,
+    "armor_type": null
+  },
+  "health_potion":{
+    "rarity": "bronze",
+    "item_type": "consumable",
+    "damage": null,
+    "crit_chance": null,
+    "proj_dist": null,
+    "defense": null,
+    "armor_type": null
+  },
+  "mana_potion":{
+    "rarity": "bronze",
+    "item_type": "consumable",
+    "damage": null,
+    "crit_chance": null,
+    "proj_dist": null,
+    "defense": null,
+    "armor_type": null
+  },
+  "axe":{
+    "rarity": "bronze",
+    "item_type": "weapon",
+    "damage": 2,
+    "crit_chance": 0.05,
+    "proj_dist": null,
+    "defense": null,
+    "armor_type": null
+  },
+  "gold_head":{
+    "rarity": "gold",
+    "item_type": "armor",
+    "damage": null,
+    "crit_chance": null,
+    "proj_dist": null,
+    "defense": 5,
+    "armor_type": "head"
+  },
+  "gold_chest":{
+    "rarity": "gold",
+    "item_type": "armor",
+    "damage": null,
+    "crit_chance": null,
+    "proj_dist": null,
+    "defense": 6,
+    "armor_type": "chest"
+  },
+  "gold_legs":{
+    "rarity": "gold",
+    "item_type": "armor",
+    "damage": null,
+    "crit_chance": null,
+    "proj_dist": null,
+    "defense": 5,
+    "armor_type": "legs"
+  },
+  "gold_feet":{
+    "rarity": "gold",
+    "item_type": "armor",
+    "damage": null,
+    "crit_chance": null,
+    "proj_dist": null,
+    "defense": 4,
+    "armor_type": "feet"
+  }
+}

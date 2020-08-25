@@ -1,0 +1,49 @@
+{
+  "alex": {
+    "armor": {
+      "head": "basic_head",
+      "chest": "basic_chest",
+      "legs": "basic_legs",
+      "feet": "basic_feet"
+    },
+    "hotbar": [
+      "sword",
+      null,
+      null,
+      "lightning",
+      "health_potion"
+    ],
+    "inventory": [
+      "lightning",
+      "axe",
+      "fire",
+      "lightning",
+      "fire",
+      "lightning",
+      "sword",
+      "fire",
+      "lightning",
+      "axe",
+      null,
+      null,
+      null,
+      "fire",
+      "lightning",
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "attributes": {
+      "health": 8,
+      "mana": 4,
+      "strength": 6,
+      "defense": 5
+    },
+    "level": 1,
+    "xp": 56,
+    "unused_sp": 0,
+    "coins": 200
+  }
+}

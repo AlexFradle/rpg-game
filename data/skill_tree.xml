@@ -1,0 +1,122 @@
+<tree>
+    <mage>
+        <fire_class>
+            <resistance player_level_needed="1" max_rank="20">
+                <fireball player_level_needed="3" max_rank="20">
+                    <fire_knife player_level_needed="5" max_rank="20">
+                        <star player_level_needed="10" max_rank="10"/>
+                        <flaming_head player_level_needed="10" max_rank="10"/>
+                    </fire_knife>
+                </fireball>
+                <fire_hammer player_level_needed="3" max_rank="20">
+                    <phoenix player_level_needed="5" max_rank="20">
+                        <ember player_level_needed="10" max_rank="10"/>
+                        <broken_heart player_level_needed="10" max_rank="10"/>
+                    </phoenix>
+                </fire_hammer>
+            </resistance>
+        </fire_class>
+        <ice_class>
+            <shield player_level_needed="1" max_rank="20">
+                <wind player_level_needed="3" max_rank="20">
+                    <sleep player_level_needed="5" max_rank="20">
+                        <ice_bolt player_level_needed="10" max_rank="10"/>
+                        <snowflake player_level_needed="10" max_rank="10"/>
+                    </sleep>
+                </wind>
+                <wave player_level_needed="3" max_rank="20">
+                    <ritual player_level_needed="5" max_rank="20">
+                        <frozen player_level_needed="10" max_rank="10"/>
+                        <ice_spark player_level_needed="10" max_rank="10"/>
+                    </ritual>
+                </wave>
+            </shield>
+        </ice_class>
+    </mage>
+    <warrior>
+        <berserker_class>
+            <viking player_level_needed="1" max_rank="20">
+                <fire_sword player_level_needed="3" max_rank="20">
+                    <defense player_level_needed="5" max_rank="20">
+                        <execution player_level_needed="10" max_rank="10"/>
+                        <ribs player_level_needed="10" max_rank="10"/>
+                    </defense>
+                </fire_sword>
+                <weapon_break player_level_needed="3" max_rank="20">
+                    <armour player_level_needed="5" max_rank="20">
+                        <dragon player_level_needed="10" max_rank="10"/>
+                        <helmet player_level_needed="10" max_rank="10"/>
+                    </armour>
+                </weapon_break>
+            </viking>
+        </berserker_class>
+        <tank_class>
+            <irish_shield player_level_needed="1" max_rank="20">
+                <gauntlet player_level_needed="3" max_rank="20">
+                    <wooden_shield player_level_needed="5" max_rank="20">
+                        <trunk player_level_needed="10" max_rank="10"/>
+                        <sword_shield player_level_needed="10" max_rank="10"/>
+                    </wooden_shield>
+                </gauntlet>
+                <cog player_level_needed="3" max_rank="20">
+                    <balance player_level_needed="5" max_rank="20">
+                        <green_skull player_level_needed="10" max_rank="10"/>
+                        <speed player_level_needed="10" max_rank="10"/>
+                    </balance>
+                </cog>
+            </irish_shield>
+        </tank_class>
+    </warrior>
+    <archer>
+        <deadeye>
+            <amulet player_level_needed="1" max_rank="20">
+                <crossbow player_level_needed="3" max_rank="20">
+                    <quiver player_level_needed="5" max_rank="20">
+                        <boot player_level_needed="10" max_rank="10"/>
+                        <feather player_level_needed="10" max_rank="10"/>
+                    </quiver>
+                </crossbow>
+                <swirl player_level_needed="3" max_rank="20">
+                    <eye player_level_needed="5" max_rank="20">
+                        <skull player_level_needed="10" max_rank="10"/>
+                        <skull_flag player_level_needed="10" max_rank="10"/>
+                    </eye>
+                </swirl>
+            </amulet>
+        </deadeye>
+        <fire_thrower>
+            <archer_symbol player_level_needed="1" max_rank="20">
+                <bow player_level_needed="3" max_rank="20">
+                    <arrows player_level_needed="5" max_rank="20">
+                        <detached_eye player_level_needed="10" max_rank="10"/>
+                        <scouts player_level_needed="10" max_rank="10"/>
+                    </arrows>
+                </bow>
+                <throwing_knives player_level_needed="3" max_rank="20">
+                    <melting_person player_level_needed="5" max_rank="20">
+                        <thorns player_level_needed="10" max_rank="10"/>
+                        <chicken player_level_needed="10" max_rank="10"/>
+                    </melting_person>
+                </throwing_knives>
+            </archer_symbol>
+        </fire_thrower>
+    </archer>
+    <looter>
+        <looter_class>
+            <money player_level_needed="1" max_rank="20">
+                <luck player_level_needed="3" max_rank="20">
+                    <xp_stars player_level_needed="5" max_rank="20">
+                        <dice player_level_needed="10" max_rank="10"/>
+                        <scales player_level_needed="10" max_rank="10"/>
+                    </xp_stars>
+                </luck>
+                <slow_motion player_level_needed="3" max_rank="20">
+                    <treasure_map player_level_needed="5" max_rank="20">
+                        <loot_bag player_level_needed="10" max_rank="10"/>
+                        <gem player_level_needed="10" max_rank="10"/>
+                    </treasure_map>
+                </slow_motion>
+            </money>
+        </looter_class>
+    </looter>
+</tree>

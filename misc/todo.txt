@@ -1,0 +1,27 @@
+images must be 50x50
+
+Server:
+- Sends data to clients about
+- Has tick rate to send data
+
+Client:
+- Player has internal tick rate to send data to server regardless of fps
+- Sends clients game data to server every tick
+- Even if singleplayer a server is still used but only for the player
+- 
+
+Skill points can be used to upgrade weapons by using a certain station or shop
+
+Weapon Classes:
+- Make base classes for melee and (magic and projectile)
+- Need to be robust to make creating new ones easy
+
+Enemy Movement:
+- Small: rushes player to try and collide, if collided then they die and deal damage
+- Medium: Waits at door ways
+- Large: Spawns small ones
+
+item names, item modifiers
+
+easter egg open room with many enemies
+

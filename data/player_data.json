@@ -1,0 +1,59 @@
+{
+  "alex": {
+    "armor": {
+      "head": "gold_head",
+      "chest": "gold_chest",
+      "legs": "gold_legs",
+      "feet": "gold_feet"
+    },
+    "hotbar": [
+      "axe",
+      "sword",
+      "lightning",
+      "fire",
+      "health_potion"
+    ],
+    "inventory": [
+      "axe",
+      "axe",
+      "axe",
+      "fire",
+      "fire",
+      "lightning",
+      "fire",
+      "lightning",
+      "fire",
+      "fire",
+      "lightning",
+      "fire",
+      "fire",
+      "lightning",
+      "lightning",
+      "basic_head",
+      "basic_chest",
+      "basic_legs",
+      "basic_feet",
+      "fire"
+    ],
+    "attributes": {
+      "health": 9,
+      "mana": 4,
+      "strength": 8,
+      "defense": 5
+    },
+    "hidden_attributes": {
+      "speed": 1,
+      "DOT": 1,
+      "proj_speed": 1
+    },
+    "skills": {
+      "resistance": 2,
+      "fireball": 1
+    },
+    "level": 3,
+    "xp": 102,
+    "unused_sp": 0,
+    "coins": 200,
+    "class": "mage"
+  }
+}

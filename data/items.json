@@ -1,0 +1,105 @@
+{
+  "sword":{
+    "rarity": "diamond",
+    "item_type": "weapon",
+    "damage": 40,
+    "crit_chance": 0.05,
+    "melee_dist": 60,
+    "melee_speed": 70
+  },
+  "fire":{
+    "rarity": "silver",
+    "item_type": "weapon",
+    "damage": 5,
+    "crit_chance": 0.1,
+    "proj_dist": 200,
+    "proj_size": 5,
+    "proj_speed": 10,
+    "mana_used": 3,
+    "wall_collision": true
+  },
+  "lightning":{
+    "rarity": "gold",
+    "item_type": "weapon",
+    "damage": 10,
+    "crit_chance": 0.2,
+    "proj_dist": 500,
+    "proj_size": 2,
+    "proj_speed": 20,
+    "mana_used": 2,
+    "wall_collision": true
+  },
+  "basic_head":{
+    "rarity": "bronze",
+    "item_type": "armor",
+    "defense": 1,
+    "armor_type": "head"
+  },
+  "basic_chest":{
+    "rarity": "bronze",
+    "item_type": "armor",
+    "defense": 2,
+    "armor_type": "chest"
+  },
+  "basic_legs":{
+    "rarity": "bronze",
+    "item_type": "armor",
+    "defense": 1,
+    "armor_type": "legs"
+  },
+  "basic_feet":{
+    "rarity": "bronze",
+    "item_type": "armor",
+    "defense": 1,
+    "armor_type": "feet"
+  },
+  "no_item":{
+    "rarity": "None",
+    "item_type": null,
+    "damage": null,
+    "crit_chance": null,
+    "proj_dist": null,
+    "defense": null,
+    "armor_type": null
+  },
+  "health_potion":{
+    "rarity": "bronze",
+    "item_type": "consumable"
+  },
+  "mana_potion":{
+    "rarity": "bronze",
+    "item_type": "consumable"
+  },
+  "axe":{
+    "rarity": "bronze",
+    "item_type": "weapon",
+    "damage": 2,
+    "crit_chance": 0.05,
+    "melee_dist": 90,
+    "melee_speed": 10
+  },
+  "gold_head":{
+    "rarity": "gold",
+    "item_type": "armor",
+    "defense": 5,
+    "armor_type": "head"
+  },
+  "gold_chest":{
+    "rarity": "gold",
+    "item_type": "armor",
+    "defense": 6,
+    "armor_type": "chest"
+  },
+  "gold_legs":{
+    "rarity": "gold",
+    "item_type": "armor",
+    "defense": 5,
+    "armor_type": "legs"
+  },
+  "gold_feet":{
+    "rarity": "gold",
+    "item_type": "armor",
+    "defense": 4,
+    "armor_type": "feet"
+  }
+}

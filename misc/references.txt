@@ -1,0 +1,9 @@
+Websites used:
+Pygame documentation
+Python documentation
+Stack overflow
+Wikipedia maze generation algorithm
+Wikipedia A* algorithm
+wikipedia taxicab distance
+https://www.youtube.com/watch?v=aKYlikFAV4k
+https://www.dummies.com/education/math/trigonometry/how-to-divide-a-line-segment-into-multiple-parts/
