@@ -7,6 +7,7 @@ from board import Board
 from secrets import randbelow
 from items import Item
 import colour
+from random import randint
 
 
 class Player(pygame.Surface):
@@ -14,13 +15,14 @@ class Player(pygame.Surface):
         self.__width = ENTITY_INFO["player"][0]
         self.__height = ENTITY_INFO["player"][1]
         super().__init__((self.__width * 2, self.__height * 2), pygame.SRCALPHA)
-        self.img = pygame.image.load(f"assets/{WINDOW_WIDTH}x{WINDOW_HEIGHT}/player.png")
+        self.__img = pygame.image.load(f"assets/{WINDOW_WIDTH}x{WINDOW_HEIGHT}/player.png")
         self.x, self.y = 200, 200
-        self.max_health, self.health = None, None
-        self.max_mana, self.mana = None, None
+        self.__max_health, self.__health = None, None
+        self.__max_mana, self.__mana = None, None
         self.reset_health_and_mana()
         self.melee_cooldown = 0
         self.mv_amount = 5
+        self.__damage_cooldown = 0
 
     @property
     def width(self):
@@ -30,11 +32,29 @@ class Player(pygame.Surface):
     def height(self):
         return self.__height
 
+    @property
+    def health(self):
+        return self.__health
+
+    @property
+    def mana(self):
+        return self.__mana
+
+    @health.setter
+    def health(self, value):
+        if self.__damage_cooldown == 0:
+            self.__health = value
+            self.__damage_cooldown = PLAYER_DAMAGE_COOLDOWN
+
+    @mana.setter
+    def mana(self, value):
+        pass
+
     def reset_health_and_mana(self):
-        self.max_health = 100 + (DataLoader.player_data["attributes"]["health"] * 20)
-        self.max_mana = 50 + (DataLoader.player_data["attributes"]["mana"] * 10)
-        self.health = self.max_health
-        self.mana = self.max_mana
+        self.__max_health = 100 + (DataLoader.player_data["attributes"]["health"] * 20)
+        self.__max_mana = 50 + (DataLoader.player_data["attributes"]["mana"] * 10)
+        self.__health = self.__max_health
+        self.__mana = self.__max_mana
 
     def shoot(self, mx, my):
         pass
@@ -42,10 +62,13 @@ class Player(pygame.Surface):
     def update(self, mx, my):
         self.fill((0, 0, 0, 0))
         degrees = math.degrees(math.atan2((self.x + self.__width) - mx, (self.y + self.__height) - my))
-        rotated_img = pygame.transform.rotate(self.img, degrees)
+        rotated_img = pygame.transform.rotate(self.__img, degrees)
         # pygame.draw.rect(self, (0, 255, 0), pygame.Rect(self.__width // 2, self.__height // 2, self.__width, self.__height))
         self.blit(rotated_img, (self.__width // 2, self.__height // 2))
-        # pygame.draw.circle(self, (0, 0, 255), (self.__width, self.__height), 5)
+
+        # Damage cooldown
+        if self.__damage_cooldown > 0:
+            self.__damage_cooldown -= 1
 
 
 class Enemy(pygame.Surface):
@@ -64,7 +87,7 @@ class Enemy(pygame.Surface):
         self.__size = size
         self.__colour_grad = list(colour.Color("red").range_to(colour.Color("lime"), self.__max_health))
         self.__colour_grad = [list(map(lambda a: a * 255, self.__colour_grad[i].get_rgb())) for i in range(len(self.__colour_grad))]
-        self.__cooldown = 0
+        self.__damage_cooldown = 0
 
     @property
     def width(self):
@@ -80,9 +103,9 @@ class Enemy(pygame.Surface):
 
     @health.setter
     def health(self, value):
-        if self.__cooldown == 0:
+        if self.__damage_cooldown == 0:
             self.__health = value
-            self.__cooldown = 5
+            self.__damage_cooldown = ENEMY_DAMAGE_COOLDOWN
 
     def __goto(self, prev_cell: tuple, new_cell: tuple) -> tuple:
         """
@@ -172,15 +195,17 @@ class Enemy(pygame.Surface):
         degrees = math.degrees(math.atan2(self.x - closest_player.x, self.y - closest_player.y))
         rotated_img = pygame.transform.rotate(self.__img, degrees)
         self.blit(rotated_img, (self.__width // 2, self.__height // 2))
+        # pygame.draw.rect(self, (0, 255, 0), pygame.Rect(self.__width // 2, self.__height // 2, self.__width, self.__height))
 
         # Draw health indicator
         pygame.draw.rect(self, self.__colour_grad[self.__health - 1], (0, 0, (self.__width * 2) * (self.__health / self.__max_health), self.__height // 10))
 
         # Damage cooldown
-        if self.__cooldown > 0:
-            self.__cooldown -= 1
+        if self.__damage_cooldown > 0:
+            self.__damage_cooldown -= 1
 
     def kill(self):
+        # Gets random number with bounds [1, 101)
         rng = randbelow(100) + 1
         for loot, chance in sorted(DataLoader.loot_table[self.__size].items(), key=lambda x: x[1]):
             if rng <= chance:
@@ -196,7 +221,22 @@ class SmallEnemy(Enemy):
 class MediumEnemy(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y, "medium")
-        self.__speed = 5
+        self.__speed = 4
+        self.bullets = []
+
+    def update(self, closest_player: Player, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
+        # Call superclass update() function for movement
+        super().update(closest_player, cur_pos, player_pos, cell_table, board)
+
+        # Attack behaviour
+        if randint(1, 10) == 10:
+            self.bullets.append(
+                Bullet(
+                    self.x + self.width - board.x, self.y + self.height - board.y,
+                    closest_player.x + closest_player.width - board.x, closest_player.y + closest_player.height - board.y,
+                    DataLoader.possible_items["medium_enemy_weapon"]
+                )
+            )
 
 
 class LargeEnemy(Enemy):
@@ -269,20 +309,21 @@ class MeleeSwing(pygame.Surface):
 
 
 class Bullet(pygame.Rect):
-    def __init__(self, origin_x, origin_y, mouse_x, mouse_y, weapon):
+    def __init__(self, origin_x, origin_y, target_x, target_y, weapon):
         super().__init__(origin_x, origin_y, weapon["proj_size"], weapon["proj_size"])
         self.x = origin_x
         self.y = origin_y
-        self.__mouse_x = mouse_x
-        self.__mouse_y = mouse_y
+        self.__target_x = target_x
+        self.__target_y = target_y
         self.__origin_x = origin_x
         self.__origin_y = origin_y
         self.__width = weapon["proj_size"]
         self.__height = weapon["proj_size"]
         self.__circle_radius = weapon["proj_dist"]
         self.damage = weapon["damage"]
-        self.colour = (255, 0, 0)
+        self.colour = tuple(weapon["colour"])
         self.moving = True
+        self.from_enemy = True if weapon["item_type"] == "enemy_weapon" else False
 
         # Create circle function in form (x - center_x)^2 + (y - center_y)^2 = radius^2
         self.circle_eq = lambda x, y: (x - self.__origin_x) ** 2 + (y - self.__origin_y) ** 2
@@ -292,23 +333,32 @@ class Bullet(pygame.Rect):
         #    /
         #   /  (x2 - x1)^2 + (y2 - y1)^2
         # \/
-        dist = math.sqrt((mouse_x - self.__origin_x) ** 2 + (mouse_y - self.__origin_y) ** 2)
+        dist = math.sqrt((target_x - self.__origin_x) ** 2 + (target_y - self.__origin_y) ** 2)
 
         # Calculate the number of times the line can be divided by the speed
-        self.__num_of_divisions = abs(dist / (1 - weapon["proj_speed"]))
+        self.__num_of_divisions = abs(dist / (MAX_BULLET_SPEED * (weapon["proj_speed"] / 100)))
         self.__cur_div = 1
 
-    def update(self, dt):
-        if self.circle_eq(self.x, self.y) < self.__circle_radius ** 2:
-            # Uses the equation:
-            # (x, y) = (x1 + k(x2 - x1), y1 + k(y2 - y1))
-            #
-            # where (x1, y1) is the start point,
-            #       (x2, y2) is the endpoint,
-            #       k is the fraction of the line you want to divide
-            new_x = self.__origin_x + ((self.__cur_div / self.__num_of_divisions) * (self.__mouse_x - self.__origin_x))
-            new_y = self.__origin_y + ((self.__cur_div / self.__num_of_divisions) * (self.__mouse_y - self.__origin_y))
+    def update(self, dt: float) -> None:
+        """
+        Updates the Bullet class
+        To move the bullet this equation is used:
+            (x, y) = (x1 + k(x2 - x1), y1 + k(y2 - y1))
 
+            where (x1, y1) is the start point,
+                  (x2, y2) is the endpoint,
+                  k is the fraction of the line you want to divide
+        :param dt: Delta time
+        :return: None
+        """
+        # Checks if (x - center_x)^2 + (y - center_y)^2 < radius^2
+        # and if so then the bullet is still within the circle and can be drawn and moved
+        if self.circle_eq(self.x, self.y) < self.__circle_radius ** 2:
+
+            new_x = self.__origin_x + ((self.__cur_div / self.__num_of_divisions) * (self.__target_x - self.__origin_x))
+            new_y = self.__origin_y + ((self.__cur_div / self.__num_of_divisions) * (self.__target_y - self.__origin_y))
+
+            # Scale using delta time
             scaled_x = (new_x - self.x) * dt
             scaled_y = (new_y - self.y) * dt
 

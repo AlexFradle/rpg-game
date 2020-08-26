@@ -16,7 +16,8 @@
     "proj_size": 5,
     "proj_speed": 10,
     "mana_used": 3,
-    "wall_collision": true
+    "wall_collision": true,
+    "colour": [255, 60, 0]
   },
   "lightning":{
     "rarity": "gold",
@@ -25,9 +26,10 @@
     "crit_chance": 0.2,
     "proj_dist": 500,
     "proj_size": 2,
-    "proj_speed": 20,
+    "proj_speed": 100,
     "mana_used": 2,
-    "wall_collision": true
+    "wall_collision": true,
+    "colour": [0, 128, 255]
   },
   "basic_head":{
     "rarity": "bronze",
@@ -101,5 +103,14 @@
     "item_type": "armor",
     "defense": 4,
     "armor_type": "feet"
+  },
+  "medium_enemy_weapon":{
+    "item_type": "enemy_weapon",
+    "damage": 5,
+    "crit_chance": 0.05,
+    "proj_dist": 700,
+    "proj_size": 5,
+    "proj_speed": 35,
+    "colour": [255, 255, 255]
   }
 }

@@ -149,11 +149,17 @@ def line_collide(line_1_coords: Iterable, line_2_coords: Iterable) -> tuple:
 
 def bullet_collide(b):
     adjusted_b = pygame.Rect(b.x + board.x, b.y + board.y, b.w, b.h)
-    for e in enemies:
-        e_rect = pygame.Rect(e.x + (e.width // 2), e.y + (e.height // 2), e.width, e.height)
-        if adjusted_b.colliderect(e_rect):
-            e.health -= b.damage
+    if b.from_enemy:
+        pl_rect = pygame.Rect(player.x + (player.width // 2), player.y + (player.height // 2), player.width, player.height)
+        if adjusted_b.colliderect(pl_rect):
+            player.health -= b.damage
             return True
+    else:
+        for e in enemies:
+            e_rect = pygame.Rect(e.x + (e.width // 2), e.y + (e.height // 2), e.width, e.height)
+            if adjusted_b.colliderect(e_rect):
+                e.health -= b.damage
+                return True
 
     for vws, hws, vds, hds in zip(board.vert_wall_pos, board.hori_wall_pos, board.vert_door_pos, board.hori_door_pos):
         for vw, hw, vd, hd in zip(vws, hws, vds, hds):
@@ -428,10 +434,10 @@ while running and player.health > 0:
         #                                     ^
         #                        Inverted y due to inverted axis
         melee_swing_coords = (
-            ms_rect.centerx + ((melee_swing.width // 2) * cos(melee_swing.left)),
-            ms_rect.centery - ((melee_swing.width // 2) * sin(melee_swing.left)),
-            ms_rect.centerx + ((melee_swing.width // 2) * cos(melee_swing.right)),
-            ms_rect.centery - ((melee_swing.width // 2) * sin(melee_swing.right))
+            ms_rect.centerx + ((melee_swing.width // 2) * cos(melee_swing.left)),   # x1
+            ms_rect.centery - ((melee_swing.width // 2) * sin(melee_swing.left)),   # y1
+            ms_rect.centerx + ((melee_swing.width // 2) * cos(melee_swing.right)),  # x2
+            ms_rect.centery - ((melee_swing.width // 2) * sin(melee_swing.right))   # y2
         )
         for e in enemies:
             enemy_lines = get_rect_lines(pygame.Rect(e.x + (e.width // 2), e.y + (e.height // 2), e.width, e.height))
@@ -458,6 +464,15 @@ while running and player.health > 0:
         it_dr.update()
         board.blit(it_dr, (it_dr.x, it_dr.y))
 
+    # Update enemies
+    for enemy in enemies:
+        r, c = board.cell_collide(enemy)
+        puz_x, puz_y = maze.cell_table[c, r]
+        enemy.update(player, (puz_x, puz_y), (player_puz_x, player_puz_y), maze.cell_table, board)
+        if isinstance(enemy, MediumEnemy):
+            bullets.extend(enemy.bullets)
+            enemy.bullets = []
+
     # Draw bullets to screen
     for bullet in bullets:
         bullet_collided = bullet_collide(bullet)
@@ -474,9 +489,6 @@ while running and player.health > 0:
 
     # Draw enemies to screen
     for enemy in enemies:
-        r, c = board.cell_collide(enemy)
-        puz_x, puz_y = maze.cell_table[c, r]
-        enemy.update(player, (puz_x, puz_y), (player_puz_x, player_puz_y), maze.cell_table, board)
         display.blit(enemy, (enemy.x, enemy.y))
 
     # Draw player to screen
@@ -543,6 +555,10 @@ while running and player.health > 0:
     if show_st:
         st.update(font, data)
         display.blit(st, (0, height // 2 - (st.height // 2)))
+
+    # Draw fps counter
+    fps_txt = font.render(str(round(clock.get_fps(), 0)), True, (0, 255, 0))
+    display.blit(fps_txt, (0, 0))
 
     # Update whole screen
     pygame.display.update()

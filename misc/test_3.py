@@ -1,6 +1,8 @@
-def f(x):
-    print(x**2 + 2*x + 1)
+class A:
+    def __init__(self, x):
+        self._x = x
 
 
-a = 2
-f(a)
+a = A(1)
+a._x = 2
+print(a._x)
