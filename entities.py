@@ -242,7 +242,9 @@ class MediumEnemy(Enemy):
 class LargeEnemy(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y, "large")
-        self.__speed = 2
+
+    def update(self, closest_player: Player, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
+        self.__is_moving = False
 
 
 class MeleeSwing(pygame.Surface):
