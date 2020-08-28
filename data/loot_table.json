@@ -1,7 +1,10 @@
 {
   "medium": {
-    "fire": 50,
-    "lightning": 25,
-    "sword": 2
+    "drops": {
+      "fire": 50,
+      "lightning": 25,
+      "sword": 2
+    },
+    "xp": 10
   }
 }

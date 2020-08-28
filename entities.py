@@ -6,7 +6,7 @@ from a_star import AStar
 from board import Board
 from secrets import randbelow
 from items import Item
-import colour
+from utils import colour_lerp
 from random import randint
 
 
@@ -63,7 +63,6 @@ class Player(pygame.Surface):
         self.fill((0, 0, 0, 0))
         degrees = math.degrees(math.atan2((self.x + self.__width) - mx, (self.y + self.__height) - my))
         rotated_img = pygame.transform.rotate(self.__img, degrees)
-        # pygame.draw.rect(self, (0, 255, 0), pygame.Rect(self.__width // 2, self.__height // 2, self.__width, self.__height))
         self.blit(rotated_img, (self.__width // 2, self.__height // 2))
 
         # Damage cooldown
@@ -85,8 +84,7 @@ class Enemy(pygame.Surface):
         self.__speed = 5
         self.__is_moving = False
         self.__size = size
-        self.__colour_grad = list(colour.Color("red").range_to(colour.Color("lime"), self.__max_health))
-        self.__colour_grad = [list(map(lambda a: a * 255, self.__colour_grad[i].get_rgb())) for i in range(len(self.__colour_grad))]
+        self.__colour_grad = [i for i in colour_lerp((255, 9, 0), (0, 255, 0), self.__max_health)]
         self.__damage_cooldown = 0
 
     @property
@@ -195,7 +193,6 @@ class Enemy(pygame.Surface):
         degrees = math.degrees(math.atan2(self.x - closest_player.x, self.y - closest_player.y))
         rotated_img = pygame.transform.rotate(self.__img, degrees)
         self.blit(rotated_img, (self.__width // 2, self.__height // 2))
-        # pygame.draw.rect(self, (0, 255, 0), pygame.Rect(self.__width // 2, self.__height // 2, self.__width, self.__height))
 
         # Draw health indicator
         pygame.draw.rect(self, self.__colour_grad[self.__health - 1], (0, 0, (self.__width * 2) * (self.__health / self.__max_health), self.__height // 10))
@@ -204,12 +201,16 @@ class Enemy(pygame.Surface):
         if self.__damage_cooldown > 0:
             self.__damage_cooldown -= 1
 
-    def kill(self):
+    def kill(self) -> tuple:
+        """
+        Called when enemy is dead
+        :return: Tuple of (x, y, item, xp)
+        """
         # Gets random number with bounds [1, 101)
         rng = randbelow(100) + 1
-        for loot, chance in sorted(DataLoader.loot_table[self.__size].items(), key=lambda x: x[1]):
+        for loot, chance in sorted(DataLoader.loot_table[self.__size]["drops"].items(), key=lambda x: x[1]):
             if rng <= chance:
-                return self.x, self.y, Item(loot)
+                return self.x, self.y, Item(loot), DataLoader.loot_table[self.__size]["xp"]
 
 
 class SmallEnemy(Enemy):

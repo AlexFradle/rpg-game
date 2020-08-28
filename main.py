@@ -6,9 +6,8 @@ from data_loader import DataLoader
 from maze_creator import MazeCreator
 from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH
 from random import randint
-from items import ItemDrop
-from typing import Iterable
 from math import sin, cos
+from utils import inv_collide, eq_collide, st_collide, line_collide, bullet_collide, get_rect_corners, kill_enemy
 pygame.init()
 
 width, height = WINDOW_WIDTH, WINDOW_HEIGHT
@@ -67,128 +66,6 @@ item_drops = []
 bullets = []
 
 
-def inv_collide() -> tuple:
-    """
-    Checks if the mouse collides with any of the items
-    :return: The position in the inventory items list, Rect object of which the mouse collides with
-    """
-    # Loops through inv using __getitem__
-    for pos, space in enumerate(inv):
-        rect = pygame.Rect((inv.width // 2) + space[1].x, (inv.height // 2) + space[1].y, space[1].w, space[1].h)
-        if rect.collidepoint(mx, my):
-            return pos, space
-
-
-def eq_collide() -> tuple:
-    """
-    Checks if the mouse collides with any of the equipment
-    :return: The position in the equipment items list, Rect object of which the mouse collides with
-    """
-    for pos, slot in enumerate(equipment):
-        rect = pygame.Rect(slot[1].x, (height // 2 - (equipment.height // 2)) + slot[1].y, slot[1].w, slot[1].h)
-        if rect.collidepoint(mx, my):
-            return pos, slot
-
-
-def st_collide() -> tuple:
-    """
-    Checks if mouse collides with any of the skill tree rects
-    :return: The space that was collided with
-    """
-    for space in st:
-        rect = pygame.Rect(space[1].x, space[1].y + (height // 2 - (st.height // 2)), space[1].w, space[1].h)
-        if rect.collidepoint(mx, my):
-            return space
-
-
-def line_collide(line_1_coords: Iterable, line_2_coords: Iterable) -> tuple:
-    """
-    Line-Line Collision using the equation:
-
-
-            (x1 - x3)(y3 - y4) - (y1 - y3)(x3 - x4)
-        t = ─────────────────────────────────────────────
-            (x1 - x2)(y3 - y4) - (y1 - y2)(x3 - x4)
-
-
-              (x1 - x2)(y1 - y3) - (y1 - y2)(x1 - x3)
-        u = - ─────────────────────────────────────────────
-              (x1 - x2)(y3 - y4) - (y1 - y2)(x3 - x4)
-
-
-        (Px, Py) = (x1 + t(x2 - x1), y1 + t(y2 - y1))
-                             or
-        (Px, Py) = (x3 + u(x4 - x3), y3 + u(y4 - y3))
-
-
-    t and u are used to turn the infinite lines into line segments
-
-    t and u can also be used to determine if there is a collision before calculating coords because:
-        0.0 ≤ t ≤ 1.0
-        0.0 ≤ u ≤ 1.0
-    if t or u is outside of this range then there is no collision
-
-    :param line_1_coords: (x1, y1, x2, y2)
-    :param line_2_coords: (x3, y3, x4, y4)
-    :return: Collision coords
-    """
-    # Unpacking argument iterable
-    x1, y1, x2, y2 = line_1_coords
-    x3, y3, x4, y4 = line_2_coords
-
-    # Calculating t and u
-    t = ((((x1 - x3) * (y3 - y4)) - ((y1 - y3) * (x3 - x4))) / (((x1 - x2) * (y3 - y4)) - ((y1 - y2) * (x3 - x4))))
-    u = -((((x1 - x2) * (y1 - y3)) - ((y1 - y2) * (x1 - x3))) / (((x1 - x2) * (y3 - y4)) - ((y1 - y2) * (x3 - x4))))
-
-    # Calculating intersection coords
-    px = x1 + (t * (x2 - x1))
-    py = y1 + (t * (y2 - y1))
-
-    return (px, py) if 0.0 <= t <= 1.0 and 0.0 <= u <= 1.0 else False
-
-
-def bullet_collide(b):
-    adjusted_b = pygame.Rect(b.x + board.x, b.y + board.y, b.w, b.h)
-    if b.from_enemy:
-        pl_rect = pygame.Rect(player.x + (player.width // 2), player.y + (player.height // 2), player.width, player.height)
-        if adjusted_b.colliderect(pl_rect):
-            player.health -= b.damage
-            return True
-    else:
-        for e in enemies:
-            e_rect = pygame.Rect(e.x + (e.width // 2), e.y + (e.height // 2), e.width, e.height)
-            if adjusted_b.colliderect(e_rect):
-                e.health -= b.damage
-                return True
-
-    for vws, hws, vds, hds in zip(board.vert_wall_pos, board.hori_wall_pos, board.vert_door_pos, board.hori_door_pos):
-        for vw, hw, vd, hd in zip(vws, hws, vds, hds):
-            if b.colliderect(vw) or b.colliderect(hw):
-                if (b.colliderect(vd) and vd.open_) or (b.colliderect(hd) and hd.open_):
-                    return False
-                else:
-                    return True
-    return False
-
-
-def get_rect_lines(r) -> list:
-    return [
-        (r.x, r.y),
-        (r.x + r.width, r.y),
-        (r.x + r.width, r.y + r.height),
-        (r.x, r.y + r.height)
-    ]
-
-
-def kill_enemy(index):
-    drop_data = enemies[index].kill()
-    del enemies[index]
-
-    if drop_data is not None:
-        drop_data = drop_data[0] - board.x, drop_data[1] - board.y, drop_data[2]
-        item_drops.append(ItemDrop(*drop_data))
-
-
 while running and player.health > 0:
     # Calculate real time since last frame to scale movement
     time_since_last_tick = clock.tick(frames)
@@ -205,32 +82,30 @@ while running and player.health > 0:
             # Quits game
             if event.key == pygame.K_ESCAPE:
                 running = False
+
             # Toggles inventory
             elif event.key == pygame.K_e:
                 show_inv = not show_inv
                 show_st = False
+
             # Switches tabs
             elif event.key == pygame.K_i:
                 show_equipment = not show_equipment
                 tab.selected_equipment = not tab.selected_equipment
+
+            # Toggles skill tree
             elif event.key == pygame.K_k:
                 show_st = not show_st
                 show_inv = False
+
             # Adds xp to player -------------------------------------------------- Dev tool
             elif event.key == pygame.K_x:
                 DataLoader.change_file("add_xp", 1)
-            # Removes health and mana from player -------------------------------- Dev tool
-            elif event.key == pygame.K_h:
-                player.health -= 10
-                player.mana -= 10 if player.mana - 10 >= 0 else 0
-            elif event.key == pygame.K_y:
-                frames = 2
-            elif event.key == pygame.K_v:
-                kill_enemy(randint(0, len(enemies) - 1))
 
+            # Moves item from inv to hotbar
             elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5]:
                 if show_inv:
-                    inv_collide_data = inv_collide()
+                    inv_collide_data = inv_collide(inv, *pygame.mouse.get_pos())
                     if inv_collide_data is not None:
                         pos, space = inv_collide_data
                         DataLoader.change_file("remove_from_hotbar", num_pos[event.key] - 1)
@@ -282,7 +157,7 @@ while running and player.health > 0:
             # Switch armor for current selected using right mouse
             elif event.button == 3:
                 if show_inv:
-                    inv_collide_data = inv_collide()
+                    inv_collide_data = inv_collide(inv, *pygame.mouse.get_pos())
                     if inv_collide_data is not None:
                         pos, space = inv_collide_data
                         for i_pos, tup in enumerate(inv):
@@ -345,7 +220,7 @@ while running and player.health > 0:
 
     # Mouse collision to provide the inspector with data
     if show_inv:
-        inv_collide_data = inv_collide()
+        inv_collide_data = inv_collide(inv, *pygame.mouse.get_pos())
         if inv_collide_data is not None:
             pos, space = inv_collide_data
             name = space[0][1]
@@ -358,7 +233,7 @@ while running and player.health > 0:
             }
 
         if show_equipment:
-            eq_collide_data = eq_collide()
+            eq_collide_data = eq_collide(equipment, *pygame.mouse.get_pos())
             if eq_collide_data is not None:
                 pos, slot = eq_collide_data
                 name = slot[0][1]
@@ -370,7 +245,7 @@ while running and player.health > 0:
                     "st_pos": None
                 }
     if show_st:
-        st_collide_data = st_collide()
+        st_collide_data = st_collide(st, *pygame.mouse.get_pos())
         if st_collide_data is not None:
             skill, rect, img = st_collide_data
             name = skill["elem"].tag
@@ -440,7 +315,7 @@ while running and player.health > 0:
             ms_rect.centery - ((melee_swing.width // 2) * sin(melee_swing.right))   # y2
         )
         for e in enemies:
-            enemy_lines = get_rect_lines(pygame.Rect(e.x + (e.width // 2), e.y + (e.height // 2), e.width, e.height))
+            enemy_lines = get_rect_corners(pygame.Rect(e.x + (e.width // 2), e.y + (e.height // 2), e.width, e.height))
             hits = [line_collide(melee_swing_coords, (*enemy_lines[a], *enemy_lines[b])) for a, b in zip(range(4), [1, 2, 3, 0])]
             if any(hits):
                 e.health -= damage
@@ -449,7 +324,9 @@ while running and player.health > 0:
     # Kill enemy if health < 1
     for pos, e in enumerate(enemies):
         if e.health < 1:
-            kill_enemy(pos)
+            edrps = kill_enemy(enemies, pos, board, item_drops)
+            if edrps is not None:
+                item_drops = edrps
 
     player.melee_cooldown += 1
 
@@ -475,7 +352,7 @@ while running and player.health > 0:
 
     # Draw bullets to screen
     for bullet in bullets:
-        bullet_collided = bullet_collide(bullet)
+        bullet_collided = bullet_collide(bullet, board, player, enemies)
         if bullet_collided:
             bullet.moving = False
         if bullet.moving:
