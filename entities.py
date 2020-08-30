@@ -137,7 +137,7 @@ class Enemy(pygame.Surface):
         :return: None
         """
         # Calculate Euclidean distance from current pos to player pos
-        dist = math.sqrt((player_x - self.x)**2 + (player_y - self.y)**2)
+        dist = math.sqrt((player_x - self.x) ** 2 + (player_y - self.y) ** 2)
 
         # Calculate the number of times the line can be divided by the speed
         num_of_divisions = abs(dist / (1 - self.__speed))
@@ -145,6 +145,17 @@ class Enemy(pygame.Surface):
         # Sets new coords using equation
         self.x = self.x + ((1 / num_of_divisions) * (player_x - self.x))
         self.y = self.y + ((1 / num_of_divisions) * (player_y - self.y))
+
+    @staticmethod
+    def get_path(start_x, start_y, end_x, end_y, cell_table):
+        # Columns and rows set to 0 because they are reassigned when the maze file is read
+        a = list(reversed(AStar(0, 0).solve((start_y, start_x), (end_y, end_x))[0]))
+
+        # Reverse keys and values
+        cell_table = {v: k for k, v in cell_table.items()}
+
+        # Get the acc cell positions of path
+        return [cell_table[(a[i].x, a[i].y)] for i in range(0, len(a), 2)]
 
     def __find_path(self, start_x: int, start_y: int, end_x: int, end_y: int, cell_table: dict, player: Player) -> tuple:
         """
@@ -157,14 +168,8 @@ class Enemy(pygame.Surface):
         :param player: Player obj
         :return: x and y move amounts
         """
-        # Columns and rows set to 0 because they are reassigned when the maze file is read
-        a = list(reversed(AStar(0, 0).solve((start_y, start_x), (end_y, end_x))[0]))
-
-        # Reverse keys and values
-        cell_table = {v: k for k, v in cell_table.items()}
-
-        # Get the acc cell positions of path
-        path = [cell_table[(a[i].x, a[i].y)] for i in range(0, len(a), 2)]
+        # Get path
+        path = self.get_path(start_x, start_y, end_x, end_y, cell_table)
 
         # If the enemy isn't in the cell the player is in then move
         if len(path) > 1:
