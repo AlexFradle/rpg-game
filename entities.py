@@ -344,7 +344,7 @@ class Bullet(pygame.Rect):
         dist = math.sqrt((target_x - self.__origin_x) ** 2 + (target_y - self.__origin_y) ** 2)
 
         # Calculate the number of times the line can be divided by the speed
-        self.__num_of_divisions = abs(dist / (MAX_BULLET_SPEED * (weapon["proj_speed"] / 100)))
+        self.__num_of_divisions = dist / (MAX_BULLET_SPEED * (weapon["proj_speed"] / 100))
         self.__cur_div = 1
 
     def update(self, dt: float) -> None:
