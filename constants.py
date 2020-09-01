@@ -1,3 +1,5 @@
+from os import getcwd
+
 # Colours
 TEXT_COLOUR = (255, 255, 255)
 COIN_TEXT_COLOUR = (255, 255, 0)
@@ -40,8 +42,8 @@ ITEM_DROP_BACKGROUND = (0, 0, 0, 0)
 ITEM_DROP_DISPLAY_BACKGROUND = (0, 0, 0, 0)
 
 # DIMENSIONS
-WINDOW_WIDTH = 1280
-WINDOW_HEIGHT = 720
+WINDOW_WIDTH = 1920
+WINDOW_HEIGHT = 1080
 
 ENTITY_INFO = {
     "player": (40, 40),
@@ -93,7 +95,7 @@ ITEM_DROP_FRAME_AMOUNT = {
 }
 
 # Directories
-BASE_PATH = "C:/Users/Alw/Desktop/rpg_game/"
+BASE_PATH = getcwd().replace("\\", "/") + "/"
 
 MAIN_ASSET_PATH = f"assets/{WINDOW_WIDTH}x{WINDOW_HEIGHT}/"
 
@@ -113,8 +115,7 @@ ASSET_DIRECTORY_SIZES = {
         "assets/animation/bronze/",
         "assets/animation/silver/",
         "assets/animation/gold/",
-        "assets/animation/diamond/",
-        "assets/item_drops/"
+        "assets/animation/diamond/"
     ],
     25: ["assets/ui/"]
 }

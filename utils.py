@@ -185,3 +185,12 @@ def kill_enemy(enemies: list, index: int, board: Board, item_drops: list) -> lis
         drop_data = drop_data[0] - board.x, drop_data[1] - board.y, drop_data[2]
         item_drops.append(ItemDrop(*drop_data))
         return item_drops
+
+
+def get_teleport_position(tpa, board):
+    return {
+        0: (tpa.x + tpa.height + board.x, tpa.y + board.y),
+        90: (tpa.x + board.x, tpa.y - tpa.width + board.y),
+        180: (tpa.x - tpa.width + board.x, tpa.y + board.y),
+        270: (tpa.x + board.x, tpa.y + tpa.height + board.y)
+    }[tpa.angle]

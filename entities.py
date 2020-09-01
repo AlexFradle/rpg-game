@@ -147,7 +147,7 @@ class Enemy(pygame.Surface):
         self.y = self.y + ((1 / num_of_divisions) * (player_y - self.y))
 
     @staticmethod
-    def get_path(start_x, start_y, end_x, end_y, cell_table):
+    def _get_path(start_x, start_y, end_x, end_y, cell_table):
         # Columns and rows set to 0 because they are reassigned when the maze file is read
         a = list(reversed(AStar(0, 0).solve((start_y, start_x), (end_y, end_x))[0]))
 
@@ -169,7 +169,7 @@ class Enemy(pygame.Surface):
         :return: x and y move amounts
         """
         # Get path
-        path = self.get_path(start_x, start_y, end_x, end_y, cell_table)
+        path = self._get_path(start_x, start_y, end_x, end_y, cell_table)
 
         # If the enemy isn't in the cell the player is in then move
         if len(path) > 1:
@@ -187,12 +187,12 @@ class Enemy(pygame.Surface):
     def update(self, closest_player: Player, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
         self.fill((0, 0, 0, 0))
         self.__board = board
+        if self.__size != "large":
+            mv_info = self.__find_path(*cur_pos, *player_pos, cell_table, closest_player)
 
-        mv_info = self.__find_path(*cur_pos, *player_pos, cell_table, closest_player)
-
-        if self.__is_moving and mv_info is not None:
-            self.x += mv_info[0]
-            self.y += mv_info[1]
+            if self.__is_moving and mv_info is not None:
+                self.x += mv_info[0]
+                self.y += mv_info[1]
 
         # Rotates enemy image towards player
         degrees = math.degrees(math.atan2(self.x - closest_player.x, self.y - closest_player.y))
@@ -248,9 +248,55 @@ class MediumEnemy(Enemy):
 class LargeEnemy(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y, "large")
+        self.l_enemy_pos = []
+        self.__prev_cell = []
+        self.__cur_cell = []
+        self.teleport_animation = None
 
     def update(self, closest_player: Player, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
+        # Stop enemy from moving
         self.__is_moving = False
+
+        # Get path to player
+        path = self._get_path(*cur_pos, *player_pos, cell_table)
+
+        #
+        self.__prev_cell = path[0]
+
+        # Call superclass update function to change enemy visual
+        super().update(closest_player, cur_pos, player_pos, cell_table, board)
+
+        # Move to next cell if it is further than 1 away from the player
+        next_cell = board.cell_pos[path[1 if len(path) > 2 else 0][1]][path[1 if len(path) > 2 else 0][0]]
+
+        #
+        old_x = self.x
+        old_y = self.y
+
+        # New x and y pos in the middle of the cell
+        new_x = (next_cell.x + board.x + (next_cell.w // 2) - self.width)
+        new_y = (next_cell.y + board.y + (next_cell.h // 2) - self.height)
+
+        # Only change x and y if there isn't a large enemy already in there
+        self.x, self.y = (new_x, new_y) if (new_x, new_y) not in self.l_enemy_pos else (self.x, self.y)
+
+        #
+        self.__cur_cell = (
+            path[1 if len(path) > 2 else 0][0],
+            path[1 if len(path) > 2 else 0][1]
+        ) if self.x == new_x and self.y == new_y else path[0]
+
+        if self.__prev_cell != self.__cur_cell and self.__prev_cell != self.__cur_cell:
+            dirs = {(0, -1): 90, (0, 1): 270, (1, 0): 0, (-1, 0): 180}
+            angle = 0
+            for dir_ in dirs:
+                if self.__prev_cell[0] + dir_[0] == self.__cur_cell[0] and self.__prev_cell[1] + dir_[1] == self.__cur_cell[1]:
+                    angle = dirs[dir_]
+                    break
+
+            #
+            print(angle)
+            self.teleport_animation = TeleportAnimation(old_x, old_y, angle)
 
 
 class MeleeSwing(pygame.Surface):
@@ -376,6 +422,40 @@ class Bullet(pygame.Rect):
             self.__cur_div += 1
         else:
             self.moving = False
+
+
+class TeleportAnimation(pygame.Surface):
+    def __init__(self, x, y, angle):
+        self.__width = CELL_WIDTH + WALL_VERTICAL_WIDTH
+        self.__height = ENTITY_INFO["large"][1]
+        super().__init__((self.__width, self.__height), pygame.SRCALPHA)
+        self.x = x
+        self.y = y
+        self.angle = angle
+        self.divs = 15
+        self.__segments = [pygame.Rect((self.__width // self.divs) * i, 0, self.__width // self.divs, self.__height) for i in range(self.divs)]
+        self.__cur_frame = 0
+        self.__colour_grad = [i for i in colour_lerp((255, 255, 255), (255, 60, 0), self.divs)]
+
+    @property
+    def width(self):
+        return self.__width
+
+    @property
+    def height(self):
+        return self.__height
+
+    def update(self):
+        # takes 30 frames
+        self.fill((0, 0, 0, 0))
+        if self.__cur_frame < 15:
+            for i in range(self.__cur_frame):
+                pygame.draw.rect(self, self.__colour_grad[i], self.__segments[i])
+            self.__cur_frame += 1
+        elif 15 <= self.__cur_frame <= 30:
+            for i in range(self.__cur_frame - 15, 15):
+                pygame.draw.rect(self, self.__colour_grad[i], self.__segments[i])
+            self.__cur_frame += 1
 
 
 if __name__ == '__main__':

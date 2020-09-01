@@ -7,11 +7,11 @@ from maze_creator import MazeCreator
 from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH
 from random import randint
 from math import sin, cos
-from utils import inv_collide, eq_collide, st_collide, line_collide, bullet_collide, get_rect_corners, kill_enemy
+from utils import inv_collide, eq_collide, st_collide, line_collide, bullet_collide, get_rect_corners, kill_enemy, get_teleport_position
 pygame.init()
 
 width, height = WINDOW_WIDTH, WINDOW_HEIGHT
-display = pygame.display.set_mode((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF)
+display = pygame.display.set_mode((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 pygame.mouse.set_cursor(*pygame.cursors.broken_x)
 
@@ -39,9 +39,7 @@ st = SkillTree(width, height)
 
 # Create entities
 player = Player()
-s_enemy = SmallEnemy(950, 190)
-m_enemy = MediumEnemy(190, 190)
-l_enemy = LargeEnemy(190, 190)
+enemies = [LargeEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190) for i in range(2)]
 melee_swing = MeleeSwing(player, hotbar[hotbar.selected_pos][1])
 
 healthbar = HealthBar(player.health)
@@ -60,7 +58,6 @@ mx, my = 0, 0
 go_right, go_left, go_up, go_down, = False, False, False, False
 num_pos = {pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 3, pygame.K_4: 4, pygame.K_5: 5}
 mid_screen = pygame.Rect(0, (height // 2) - 200, width, height // 2)
-enemies = [MediumEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190) for i in range(10)]
 frames = 60
 item_drops = []
 bullets = []
@@ -343,9 +340,16 @@ while running and player.health > 0:
 
     # Update enemies
     for enemy in enemies:
+        l_enemy_pos = [(i.x, i.y) for i in enemies if isinstance(i, LargeEnemy)]
+
         r, c = board.cell_collide(enemy)
         puz_x, puz_y = maze.cell_table[c, r]
+
+        if isinstance(enemy, LargeEnemy):
+            enemy.l_enemy_pos = l_enemy_pos
+
         enemy.update(player, (puz_x, puz_y), (player_puz_x, player_puz_y), maze.cell_table, board)
+
         if isinstance(enemy, MediumEnemy):
             bullets.extend(enemy.bullets)
             enemy.bullets = []
@@ -366,6 +370,12 @@ while running and player.health > 0:
 
     # Draw enemies to screen
     for enemy in enemies:
+        if isinstance(enemy, LargeEnemy):
+            if enemy.teleport_animation is not None:
+                enemy.teleport_animation.update()
+                rotated_animation = pygame.transform.rotate(enemy.teleport_animation, enemy.teleport_animation.angle)
+                display.blit(rotated_animation, get_teleport_position(enemy.teleport_animation, board))
+
         display.blit(enemy, (enemy.x, enemy.y))
 
     # Draw player to screen

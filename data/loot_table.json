@@ -6,5 +6,12 @@
       "sword": 2
     },
     "xp": 10
+  },
+  "large":{
+    "drops":{
+      "gold_chest": 25,
+      "sword": 10
+    },
+    "xp": 50
   }
 }
