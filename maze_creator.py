@@ -13,10 +13,11 @@ class MazeCreator:
             ]
             for i in range(self.height + (1 if self.height % 2 == 0 else 0))
         ]
-        # Cell positions, e.g (acc_x, acc_y): (puz_x, puz_y)
-        self.__cell_pos = [[(j, i) for j in range(len(range(1, len(self.grid), 2)))] for i in range(len(range(1, len(self.grid), 2)))]
-        self.__puz_pos = [[(j, i) for j in range(1, len(self.grid), 2)] for i in range(1, len(self.grid), 2)]
-        self.cell_table = dict(ChainMap(*[{a: b for a, b in zip(c, p)} for c, p in zip(self.__cell_pos, self.__puz_pos)]))
+        # Cell positions, e.g (acc_x, acc_y): (puz_x, puz_y), sequence is 2n + 1
+        self.cell_table = dict(ChainMap(*[
+            {(i, j): ((i * 2) + 1, (j * 2) + 1) for j in range(len(self.grid) // 2)}
+            for i in range(len(self.grid) // 2)
+        ]))
 
     def get_adjacent_walls(self, cell: tuple) -> list:
         """
