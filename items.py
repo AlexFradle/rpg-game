@@ -19,12 +19,12 @@ class Item:
 
 class ItemDrop(pygame.Surface):
     def __init__(self, x, y, item):
-        super().__init__((ITEM_DROP_WIDTH, ITEM_DROP_HEIGHT), pygame.SRCALPHA)
+        self.__width = int((WINDOW_HEIGHT / 720) * ITEM_DROP_WIDTH)
+        self.__height = int((WINDOW_HEIGHT / 720) * ITEM_DROP_HEIGHT)
+        super().__init__((self.__width, self.__height), pygame.SRCALPHA)
         self.x = x
         self.y = y
         self.item = item
-        self.__width = ITEM_DROP_WIDTH
-        self.__height = ITEM_DROP_HEIGHT
         self.image = pygame.image.load(f"{MAIN_ASSET_PATH}{item.name}.png")
         self.__pickup_frames = iter([
             pygame.image.load(f"{MAIN_ASSET_PATH}{item.data['rarity']}_{i}.png")

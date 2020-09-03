@@ -1,4 +1,10 @@
 {
+  "small": {
+    "drops": {
+      "axe": 2
+    },
+    "xp": 1
+  },
   "medium": {
     "drops": {
       "fire": 50,

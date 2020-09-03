@@ -8,6 +8,7 @@ from secrets import randbelow
 from items import Item
 from utils import colour_lerp
 from random import randint
+from dataclasses import dataclass
 
 
 class Player(pygame.Surface):
@@ -219,9 +220,14 @@ class Enemy(pygame.Surface):
 
 
 class SmallEnemy(Enemy):
-    def __init__(self, x, y):
+    def __init__(self, x, y, origin=0):
         super().__init__(x, y, "small")
-        self.__speed = 10
+        self.__speed = 15
+        self.origin = origin
+
+    @classmethod
+    def from_large_enemy(cls, parent):
+        return cls(parent.x + parent.width, parent.y + parent.height, 1)
 
 
 class MediumEnemy(Enemy):
@@ -252,6 +258,7 @@ class LargeEnemy(Enemy):
         self.__prev_cell = []
         self.__cur_cell = []
         self.teleport_animation = None
+        self.spawned_enemies = []
 
     def update(self, closest_player: Player, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
         # Stop enemy from moving
@@ -295,8 +302,11 @@ class LargeEnemy(Enemy):
                     break
 
             #
-            print(angle)
-            self.teleport_animation = TeleportAnimation(old_x, old_y, angle)
+            # self.teleport_animation = TeleportAnimation(old_x, old_y, angle)
+
+        # Spawn small enemy
+        if randint(1, 25) == 25:
+            self.spawned_enemies.append(SmallEnemy.from_large_enemy(self))
 
 
 class MeleeSwing(pygame.Surface):
@@ -422,6 +432,31 @@ class Bullet(pygame.Rect):
             self.__cur_div += 1
         else:
             self.moving = False
+
+
+@dataclass
+class Bezier:
+    control_points: list
+    num_of_points: int
+
+    def get_points(self):
+        control_x, control_y = zip(*self.control_points)
+        return [
+            (
+                self.__B(control_x, 0, len(self.control_points) - 1, t / self.num_of_points),
+                self.__B(control_y, 0, len(self.control_points) - 1, t / self.num_of_points)
+            )
+            for t in range(self.num_of_points)
+        ]
+
+    def __B(self, arr, i, j, t):
+        """
+        Using De Casteljau's algorithm:
+        Gets the one dimensional value of the coords at the provided i value
+        Recurrence relation:
+            B(i, j) = B(i, j - 1) * (1 - t) + B(i + 1, j - 1) * t
+        """
+        return arr[i] if j == 0 else self.__B(arr, i, j - 1, t) * (1 - t) + self.__B(arr, i + 1, j - 1, t) * t
 
 
 class TeleportAnimation(pygame.Surface):

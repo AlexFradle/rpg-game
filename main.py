@@ -347,6 +347,9 @@ while running and player.health > 0:
 
         if isinstance(enemy, LargeEnemy):
             enemy.l_enemy_pos = l_enemy_pos
+            if enemy.spawned_enemies:
+                enemies.extend(enemy.spawned_enemies)
+                enemy.spawned_enemies = []
 
         enemy.update(player, (puz_x, puz_y), (player_puz_x, player_puz_y), maze.cell_table, board)
 
@@ -370,11 +373,12 @@ while running and player.health > 0:
 
     # Draw enemies to screen
     for enemy in enemies:
-        if isinstance(enemy, LargeEnemy):
-            if enemy.teleport_animation is not None:
-                enemy.teleport_animation.update()
-                rotated_animation = pygame.transform.rotate(enemy.teleport_animation, enemy.teleport_animation.angle)
-                display.blit(rotated_animation, get_teleport_position(enemy.teleport_animation, board))
+        # if isinstance(enemy, LargeEnemy):
+        #     if enemy.teleport_animation is not None:
+        #         enemy.teleport_animation.update()
+        #         rotated_animation = pygame.transform.rotate(enemy.teleport_animation, enemy.teleport_animation.angle)
+        #         print(get_teleport_position(enemy.teleport_animation))
+        #         display.blit(rotated_animation, get_teleport_position(enemy.teleport_animation))
 
         display.blit(enemy, (enemy.x, enemy.y))
 
