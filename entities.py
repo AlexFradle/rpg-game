@@ -22,7 +22,7 @@ class Player(pygame.Surface):
         self.__max_mana, self.__mana = None, None
         self.reset_health_and_mana()
         self.melee_cooldown = 0
-        self.mv_amount = 5
+        self.mv_amount = PLAYER_MV_AMOUNT
         self.__damage_cooldown = 0
 
     @property
@@ -52,13 +52,15 @@ class Player(pygame.Surface):
         pass
 
     def reset_health_and_mana(self):
-        self.__max_health = 100 + (DataLoader.player_data["attributes"]["health"] * 20)
-        self.__max_mana = 50 + (DataLoader.player_data["attributes"]["mana"] * 10)
+        self.__max_health = (100 * DataLoader.player_data["level"]) + (DataLoader.player_data["attributes"]["health"] * 20)
+        self.__max_mana = (50 * DataLoader.player_data["level"]) + (DataLoader.player_data["attributes"]["mana"] * 10)
         self.__health = self.__max_health
         self.__mana = self.__max_mana
 
-    def shoot(self, mx, my):
-        pass
+    def reset_level(self):
+        if DataLoader.player_data["xp"] >= DataLoader.player_data["level"] * 100:
+            DataLoader.change_file("reset_xp")
+            DataLoader.change_file("add_level")
 
     def update(self, mx, my):
         self.fill((0, 0, 0, 0))
@@ -69,6 +71,9 @@ class Player(pygame.Surface):
         # Damage cooldown
         if self.__damage_cooldown > 0:
             self.__damage_cooldown -= 1
+
+        # Check if the player has leveled up
+        self.reset_level()
 
 
 class Enemy(pygame.Surface):
@@ -222,7 +227,7 @@ class Enemy(pygame.Surface):
 class SmallEnemy(Enemy):
     def __init__(self, x, y, origin=0):
         super().__init__(x, y, "small")
-        self.__speed = 15
+        self.__speed = 10
         self.origin = origin
 
     @classmethod
@@ -257,8 +262,8 @@ class LargeEnemy(Enemy):
         self.l_enemy_pos = []
         self.__prev_cell = []
         self.__cur_cell = []
-        self.teleport_animation = None
         self.spawned_enemies = []
+        self.bezier_points = []
 
     def update(self, closest_player: Player, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
         # Stop enemy from moving
@@ -267,18 +272,11 @@ class LargeEnemy(Enemy):
         # Get path to player
         path = self._get_path(*cur_pos, *player_pos, cell_table)
 
-        #
-        self.__prev_cell = path[0]
-
         # Call superclass update function to change enemy visual
         super().update(closest_player, cur_pos, player_pos, cell_table, board)
 
         # Move to next cell if it is further than 1 away from the player
         next_cell = board.cell_pos[path[1 if len(path) > 2 else 0][1]][path[1 if len(path) > 2 else 0][0]]
-
-        #
-        old_x = self.x
-        old_y = self.y
 
         # New x and y pos in the middle of the cell
         new_x = (next_cell.x + board.x + (next_cell.w // 2) - self.width)
@@ -286,23 +284,6 @@ class LargeEnemy(Enemy):
 
         # Only change x and y if there isn't a large enemy already in there
         self.x, self.y = (new_x, new_y) if (new_x, new_y) not in self.l_enemy_pos else (self.x, self.y)
-
-        #
-        self.__cur_cell = (
-            path[1 if len(path) > 2 else 0][0],
-            path[1 if len(path) > 2 else 0][1]
-        ) if self.x == new_x and self.y == new_y else path[0]
-
-        if self.__prev_cell != self.__cur_cell and self.__prev_cell != self.__cur_cell:
-            dirs = {(0, -1): 90, (0, 1): 270, (1, 0): 0, (-1, 0): 180}
-            angle = 0
-            for dir_ in dirs:
-                if self.__prev_cell[0] + dir_[0] == self.__cur_cell[0] and self.__prev_cell[1] + dir_[1] == self.__cur_cell[1]:
-                    angle = dirs[dir_]
-                    break
-
-            #
-            # self.teleport_animation = TeleportAnimation(old_x, old_y, angle)
 
         # Spawn small enemy
         if randint(1, 25) == 25:
@@ -443,8 +424,8 @@ class Bezier:
         control_x, control_y = zip(*self.control_points)
         return [
             (
-                self.__B(control_x, 0, len(self.control_points) - 1, t / self.num_of_points),
-                self.__B(control_y, 0, len(self.control_points) - 1, t / self.num_of_points)
+                int(self.__B(control_x, 0, len(self.control_points) - 1, t / self.num_of_points)),
+                int(self.__B(control_y, 0, len(self.control_points) - 1, t / self.num_of_points))
             )
             for t in range(self.num_of_points)
         ]

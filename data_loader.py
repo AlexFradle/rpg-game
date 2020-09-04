@@ -175,6 +175,24 @@ class DataLoader:
         file[DataLoader.player_name]["xp"] += amount
         return file
 
+    def __reset_xp(self, file: dict) -> dict:
+        """
+        Resets player xp when leveled up
+        :param file: Dict to update
+        :return: Updated file
+        """
+        file[DataLoader.player_name]["xp"] = 0
+        return file
+
+    def __add_level(self, file: dict) -> dict:
+        """
+        Adds 1 level to the player
+        :param file: Dict to update
+        :return: Updated file
+        """
+        file[DataLoader.player_name]["level"] += 1
+        return file
+
 
 if __name__ == '__main__':
     pass

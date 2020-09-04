@@ -1,13 +1,14 @@
 import pygame
 from ui import Hotbar, Inventory, Inspector, Equipment, Attributes, Tab, HealthBar, ManaBar, XPBar, SkillTree, ItemDropDisplay
 from board import Board
-from entities import Player, SmallEnemy, MediumEnemy, LargeEnemy, MeleeSwing, Bullet
+from entities import Player, SmallEnemy, MediumEnemy, LargeEnemy, MeleeSwing, Bullet, Bezier
 from data_loader import DataLoader
 from maze_creator import MazeCreator
-from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH
+from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH, BEZIER_POINT_COLOUR
 from random import randint
 from math import sin, cos
 from utils import inv_collide, eq_collide, st_collide, line_collide, bullet_collide, get_rect_corners, kill_enemy, get_teleport_position
+from random import sample
 pygame.init()
 
 width, height = WINDOW_WIDTH, WINDOW_HEIGHT
@@ -58,7 +59,7 @@ mx, my = 0, 0
 go_right, go_left, go_up, go_down, = False, False, False, False
 num_pos = {pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 3, pygame.K_4: 4, pygame.K_5: 5}
 mid_screen = pygame.Rect(0, (height // 2) - 200, width, height // 2)
-frames = 60
+frames = 30
 item_drops = []
 bullets = []
 
@@ -350,6 +351,13 @@ while running and player.health > 0:
             if enemy.spawned_enemies:
                 enemies.extend(enemy.spawned_enemies)
                 enemy.spawned_enemies = []
+
+            sml_enemies = [(i.x + i.width - board.x, i.y + i.height - board.y) for i in enemies if isinstance(i, SmallEnemy) and i.origin == 1]
+            enemy.bezier_points = Bezier([(enemy.x + enemy.width - board.x, enemy.y + enemy.height - board.y)] + sml_enemies[:len(sml_enemies) if len(sml_enemies) < 4 else 4] + [(player.x + player.width - board.x, player.y + player.height - board.y)], 100).get_points()
+
+            if enemy.bezier_points:
+                for point in enemy.bezier_points:
+                    pygame.draw.circle(board, BEZIER_POINT_COLOUR, point, 2)
 
         enemy.update(player, (puz_x, puz_y), (player_puz_x, player_puz_y), maze.cell_table, board)
 
