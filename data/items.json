@@ -106,7 +106,7 @@
   },
   "medium_enemy_weapon":{
     "item_type": "enemy_weapon",
-    "damage": 5,
+    "damage": 30,
     "crit_chance": 0.05,
     "proj_dist": 700,
     "proj_size": 5,

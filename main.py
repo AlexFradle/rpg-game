@@ -40,7 +40,7 @@ st = SkillTree(width, height)
 
 # Create entities
 player = Player()
-enemies = [LargeEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190) for i in range(2)]
+enemies = [MediumEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190) for i in range(2)]
 melee_swing = MeleeSwing(player, hotbar[hotbar.selected_pos][1])
 
 healthbar = HealthBar(player.health)

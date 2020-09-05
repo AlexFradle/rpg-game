@@ -43,9 +43,14 @@ class Player(pygame.Surface):
 
     @health.setter
     def health(self, value):
-        if self.__damage_cooldown == 0:
+        # If the new health value < current health then damage has been done
+        if value < self.__health:
+            if self.__damage_cooldown == 0:
+                damage = (self.__health - value) - DataLoader.get_player_defense()
+                self.__health -= damage if damage > 0 else 0
+                self.__damage_cooldown = PLAYER_DAMAGE_COOLDOWN
+        else:
             self.__health = value
-            self.__damage_cooldown = PLAYER_DAMAGE_COOLDOWN
 
     @mana.setter
     def mana(self, value):

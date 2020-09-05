@@ -89,6 +89,16 @@ class DataLoader:
         """
         return None if None not in DataLoader.player_data["inventory"] else DataLoader.player_data["inventory"].index(None)
 
+    @staticmethod
+    def get_player_defense() -> int:
+        """
+        Get total defense of the player by adding the total armor defense to the attribute defense
+        :return: Total defense
+        """
+        return DataLoader.player_data["attributes"]["defense"] + sum(
+            [DataLoader.possible_items[i]["defense"] for i in DataLoader.player_data["armor"].values()]
+        )
+
     def __increment_attr(self, file: dict, attr: str, amount: int) -> dict:
         """
         Increments the player attributes
