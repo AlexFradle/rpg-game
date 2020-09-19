@@ -435,7 +435,7 @@ class Bezier:
             for t in range(self.num_of_points)
         ]
 
-    def __B(self, arr, i, j, t):
+    def __B(self, arr: list, i: int, j: int, t: float) -> float:
         """
         Using De Casteljau's algorithm:
         Gets the one dimensional value of the coords at the provided i value

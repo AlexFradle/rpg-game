@@ -1,5 +1,5 @@
 import pygame
-from ui import Hotbar, Inventory, Inspector, Equipment, Attributes, Tab, HealthBar, ManaBar, XPBar, SkillTree, ItemDropDisplay
+from ui import Hotbar, Inventory, Inspector, Equipment, Attributes, Tab, HealthBar, ManaBar, XPBar, SkillTree, ItemDropDisplay, Menu
 from board import Board
 from entities import Player, SmallEnemy, MediumEnemy, LargeEnemy, MeleeSwing, Bullet, Bezier
 from data_loader import DataLoader
@@ -8,11 +8,13 @@ from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH, BEZIER_POINT
 from random import randint
 from math import sin, cos
 from utils import inv_collide, eq_collide, st_collide, line_collide, bullet_collide, get_rect_corners, kill_enemy, get_teleport_position
-from random import sample
+from os import environ
 pygame.init()
 
+environ["SDL_VIDEO_CENTERED"] = "1"
+
 width, height = WINDOW_WIDTH, WINDOW_HEIGHT
-display = pygame.display.set_mode((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN)
+display = pygame.display.set_mode((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF)
 clock = pygame.time.Clock()
 pygame.mouse.set_cursor(*pygame.cursors.broken_x)
 
@@ -37,10 +39,15 @@ xp_bar = XPBar()
 item_drop_display = ItemDropDisplay()
 board = Board(2050, 2050)
 st = SkillTree(width, height)
+menu = Menu([
+    ("Resume", lambda: exec("show_menu = False", globals())),
+    ("Help", lambda: exec("")),
+    ("Quit", lambda: exec("running = False", globals()))
+])
 
 # Create entities
 player = Player()
-enemies = [MediumEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190) for i in range(2)]
+enemies = [LargeEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190) for i in range(2)]
 melee_swing = MeleeSwing(player, hotbar[hotbar.selected_pos][1])
 
 healthbar = HealthBar(player.health)
@@ -77,22 +84,24 @@ while running and player.health > 0:
             running = False
 
         if event.type == pygame.KEYDOWN:
-            # Quits game
+            # Toggles pause
             if event.key == pygame.K_ESCAPE:
-                running = False
+                show_menu = not show_menu
+                show_inv = False
+                show_st = False
 
             # Toggles inventory
-            elif event.key == pygame.K_e:
+            elif event.key == pygame.K_e and not show_menu:
                 show_inv = not show_inv
                 show_st = False
 
             # Switches tabs
-            elif event.key == pygame.K_i:
+            elif event.key == pygame.K_i and not show_menu:
                 show_equipment = not show_equipment
                 tab.selected_equipment = not tab.selected_equipment
 
             # Toggles skill tree
-            elif event.key == pygame.K_k:
+            elif event.key == pygame.K_k and not show_menu:
                 show_st = not show_st
                 show_inv = False
 
@@ -101,7 +110,7 @@ while running and player.health > 0:
                 DataLoader.change_file("add_xp", 1)
 
             # Moves item from inv to hotbar
-            elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5]:
+            elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5] and not show_menu:
                 if show_inv:
                     inv_collide_data = inv_collide(inv, *pygame.mouse.get_pos())
                     if inv_collide_data is not None:
@@ -112,16 +121,16 @@ while running and player.health > 0:
                         DataLoader.change_file("add_to_inv", hotbar[num_pos[event.key] - 1][1], pos)
 
             # Movement keys
-            elif event.key == pygame.K_d:
+            elif event.key == pygame.K_d and not show_menu:
                 go_right = True
-            elif event.key == pygame.K_a:
+            elif event.key == pygame.K_a and not show_menu:
                 go_left = True
-            elif event.key == pygame.K_w:
+            elif event.key == pygame.K_w and not show_menu:
                 go_up = True
-            elif event.key == pygame.K_s:
+            elif event.key == pygame.K_s and not show_menu:
                 go_down = True
 
-        if event.type == pygame.KEYUP:
+        if event.type == pygame.KEYUP and not show_menu:
             if event.key == pygame.K_d:
                 go_right = False
             elif event.key == pygame.K_a:
@@ -152,6 +161,9 @@ while running and player.health > 0:
                         if m.collidepoint(mx, my):
                             DataLoader.change_file("increment_attr", list(DataLoader.player_data["attributes"])[pos], -1)
 
+                if show_menu:
+                    menu.check_pressed(*pygame.mouse.get_pos())
+
             # Switch armor for current selected using right mouse
             elif event.button == 3:
                 if show_inv:
@@ -172,7 +184,7 @@ while running and player.health > 0:
                 hotbar.change_selected(1)
 
     # Player movement
-    if not show_inv:
+    if not show_inv and not show_menu:
         collided_with_door = board.door_collide(player)
         collided_with_wall = board.wall_collide(player)
         if (collided_with_door == "not on door" and not collided_with_wall) or collided_with_door == "door open":
@@ -217,7 +229,7 @@ while running and player.health > 0:
     mx, my = pygame.mouse.get_pos()
 
     # Mouse collision to provide the inspector with data
-    if show_inv:
+    if show_inv and not show_menu:
         inv_collide_data = inv_collide(inv, *pygame.mouse.get_pos())
         if inv_collide_data is not None:
             pos, space = inv_collide_data
@@ -242,7 +254,7 @@ while running and player.health > 0:
                     "inv_pos": None,
                     "st_pos": None
                 }
-    if show_st:
+    if show_st and not show_menu:
         st_collide_data = st_collide(st, *pygame.mouse.get_pos())
         if st_collide_data is not None:
             skill, rect, img = st_collide_data
@@ -270,54 +282,55 @@ while running and player.health > 0:
                 item_drop_display.add_item((it_dr.item.name, pygame.image.load(MAIN_ASSET_PATH + it_dr.item.name + ".png")))
                 del item_drops[it_dr_pos]
 
-    for button, pressed in enumerate(pygame.mouse.get_pressed()):
-        if button == 0 and pressed == 1:
-            cur_item = DataLoader.possible_items[hotbar[hotbar.selected_pos][1]]
-            if not show_inv and not show_st and not show_menu:
-                if cur_item.get("melee_speed") is not None:
-                    speed = cur_item["melee_speed"]
-                    damage = cur_item["damage"]
-                    if player.melee_cooldown >= (60 * (1 - (speed / 100))):
-                        player.melee_cooldown = 0
-                        melee_swing.swing = True
-                        melee_swing.swing_pos = pygame.mouse.get_pos()
+    if not show_menu:
+        for button, pressed in enumerate(pygame.mouse.get_pressed()):
+            if button == 0 and pressed == 1:
+                cur_item = DataLoader.possible_items[hotbar[hotbar.selected_pos][1]]
+                if not show_inv and not show_st and not show_menu:
+                    if cur_item.get("melee_speed") is not None:
+                        speed = cur_item["melee_speed"]
+                        damage = cur_item["damage"]
+                        if player.melee_cooldown >= (60 * (1 - (speed / 100))):
+                            player.melee_cooldown = 0
+                            melee_swing.swing = True
+                            melee_swing.swing_pos = pygame.mouse.get_pos()
 
-                elif cur_item.get("proj_dist") is not None:
-                    if cur_item.get("mana_used") is not None:
-                        if player.mana - cur_item["mana_used"] >= 0:
-                            # player.mana -= cur_item["mana_used"]
-                            bullets.append(
-                                Bullet(
-                                    abs(board.x) + player.x + player.width,
-                                    abs(board.y) + player.y + player.height,
-                                    abs(board.x) + mx,
-                                    abs(board.y) + my,
-                                    cur_item
+                    elif cur_item.get("proj_dist") is not None:
+                        if cur_item.get("mana_used") is not None:
+                            if player.mana - cur_item["mana_used"] >= 0:
+                                # player.mana -= cur_item["mana_used"]
+                                bullets.append(
+                                    Bullet(
+                                        abs(board.x) + player.x + player.width,
+                                        abs(board.y) + player.y + player.height,
+                                        abs(board.x) + mx,
+                                        abs(board.y) + my,
+                                        cur_item
+                                    )
                                 )
-                            )
-                    else:
-                        # Arrow
-                        pass
+                        else:
+                            # Arrow
+                            pass
 
-    if melee_swing.swing and melee_swing.left > 0 and melee_swing.right > 0:
-        damage = DataLoader.possible_items[hotbar[hotbar.selected_pos][1]]["damage"]
-        ms_rect = pygame.Rect(melee_swing.x, melee_swing.y, melee_swing.width, melee_swing.height)
-        # Calculate coords on melee_swing circle using the equation:
-        # (x, y) = (cx + (r * cos(angle)), cy - (r * sin(angle)))
-        #                                     ^
-        #                        Inverted y due to inverted axis
-        melee_swing_coords = (
-            ms_rect.centerx + ((melee_swing.width // 2) * cos(melee_swing.left)),   # x1
-            ms_rect.centery - ((melee_swing.width // 2) * sin(melee_swing.left)),   # y1
-            ms_rect.centerx + ((melee_swing.width // 2) * cos(melee_swing.right)),  # x2
-            ms_rect.centery - ((melee_swing.width // 2) * sin(melee_swing.right))   # y2
-        )
-        for e in enemies:
-            enemy_lines = get_rect_corners(pygame.Rect(e.x + (e.width // 2), e.y + (e.height // 2), e.width, e.height))
-            hits = [line_collide(melee_swing_coords, (*enemy_lines[a], *enemy_lines[b])) for a, b in zip(range(4), [1, 2, 3, 0])]
-            if any(hits):
-                e.health -= damage
-                print(e.health)
+        if melee_swing.swing and melee_swing.left > 0 and melee_swing.right > 0:
+            damage = DataLoader.possible_items[hotbar[hotbar.selected_pos][1]]["damage"]
+            ms_rect = pygame.Rect(melee_swing.x, melee_swing.y, melee_swing.width, melee_swing.height)
+            # Calculate coords on melee_swing circle using the equation:
+            # (x, y) = (cx + (r * cos(angle)), cy - (r * sin(angle)))
+            #                                     ^
+            #                        Inverted y due to inverted axis
+            melee_swing_coords = (
+                ms_rect.centerx + ((melee_swing.width // 2) * cos(melee_swing.left)),   # x1
+                ms_rect.centery - ((melee_swing.width // 2) * sin(melee_swing.left)),   # y1
+                ms_rect.centerx + ((melee_swing.width // 2) * cos(melee_swing.right)),  # x2
+                ms_rect.centery - ((melee_swing.width // 2) * sin(melee_swing.right))   # y2
+            )
+            for e in enemies:
+                enemy_lines = get_rect_corners(pygame.Rect(e.x + (e.width // 2), e.y + (e.height // 2), e.width, e.height))
+                hits = [line_collide(melee_swing_coords, (*enemy_lines[a], *enemy_lines[b])) for a, b in zip(range(4), [1, 2, 3, 0])]
+                if any(hits):
+                    e.health -= damage
+                    print(e.health)
 
     # Kill enemy if health < 1
     for pos, e in enumerate(enemies):
@@ -340,54 +353,49 @@ while running and player.health > 0:
         board.blit(it_dr, (it_dr.x, it_dr.y))
 
     # Update enemies
-    for enemy in enemies:
-        l_enemy_pos = [(i.x, i.y) for i in enemies if isinstance(i, LargeEnemy)]
+    if not show_menu:
+        for enemy in enemies:
+            l_enemy_pos = [(i.x, i.y) for i in enemies if isinstance(i, LargeEnemy)]
 
-        r, c = board.cell_collide(enemy)
-        puz_x, puz_y = maze.cell_table[c, r]
+            r, c = board.cell_collide(enemy)
+            puz_x, puz_y = maze.cell_table[c, r]
 
-        if isinstance(enemy, LargeEnemy):
-            enemy.l_enemy_pos = l_enemy_pos
-            if enemy.spawned_enemies:
-                enemies.extend(enemy.spawned_enemies)
-                enemy.spawned_enemies = []
+            if isinstance(enemy, LargeEnemy):
+                enemy.l_enemy_pos = l_enemy_pos
+                if enemy.spawned_enemies:
+                    enemies.extend(enemy.spawned_enemies)
+                    enemy.spawned_enemies = []
 
-            sml_enemies = [(i.x + i.width - board.x, i.y + i.height - board.y) for i in enemies if isinstance(i, SmallEnemy) and i.origin == 1]
-            enemy.bezier_points = Bezier([(enemy.x + enemy.width - board.x, enemy.y + enemy.height - board.y)] + sml_enemies[:len(sml_enemies) if len(sml_enemies) < 4 else 4] + [(player.x + player.width - board.x, player.y + player.height - board.y)], 100).get_points()
+                sml_enemies = [(i.x + i.width - board.x, i.y + i.height - board.y) for i in enemies if isinstance(i, SmallEnemy) and i.origin == 1]
+                enemy.bezier_points = Bezier([(enemy.x + enemy.width - board.x, enemy.y + enemy.height - board.y)] + sml_enemies[:len(sml_enemies) if len(sml_enemies) < 4 else 4] + [(player.x + player.width - board.x, player.y + player.height - board.y)], 100).get_points()
 
-            if enemy.bezier_points:
-                for point in enemy.bezier_points:
-                    pygame.draw.circle(board, BEZIER_POINT_COLOUR, point, 2)
+                if enemy.bezier_points:
+                    for point in enemy.bezier_points:
+                        pygame.draw.circle(board, BEZIER_POINT_COLOUR, point, 2)
 
-        enemy.update(player, (puz_x, puz_y), (player_puz_x, player_puz_y), maze.cell_table, board)
+            enemy.update(player, (puz_x, puz_y), (player_puz_x, player_puz_y), maze.cell_table, board)
 
-        if isinstance(enemy, MediumEnemy):
-            bullets.extend(enemy.bullets)
-            enemy.bullets = []
+            if isinstance(enemy, MediumEnemy):
+                bullets.extend(enemy.bullets)
+                enemy.bullets = []
 
     # Draw bullets to screen
-    for bullet in bullets:
-        bullet_collided = bullet_collide(bullet, board, player, enemies)
-        if bullet_collided:
-            bullet.moving = False
-        if bullet.moving:
-            bullet.update(delta_time_scalar)
-            pygame.draw.rect(board, bullet.colour, bullet)
-        else:
-            bullets.remove(bullet)
+    if not show_menu:
+        for bullet in bullets:
+            bullet_collided = bullet_collide(bullet, board, player, enemies)
+            if bullet_collided:
+                bullet.moving = False
+            if bullet.moving:
+                bullet.update(delta_time_scalar)
+                pygame.draw.rect(board, bullet.colour, bullet)
+            else:
+                bullets.remove(bullet)
 
     # Draw board to screen
     display.blit(board, (board.x, board.y))
 
     # Draw enemies to screen
     for enemy in enemies:
-        # if isinstance(enemy, LargeEnemy):
-        #     if enemy.teleport_animation is not None:
-        #         enemy.teleport_animation.update()
-        #         rotated_animation = pygame.transform.rotate(enemy.teleport_animation, enemy.teleport_animation.angle)
-        #         print(get_teleport_position(enemy.teleport_animation))
-        #         display.blit(rotated_animation, get_teleport_position(enemy.teleport_animation))
-
         display.blit(enemy, (enemy.x, enemy.y))
 
     # Draw player to screen
@@ -454,6 +462,11 @@ while running and player.health > 0:
     if show_st:
         st.update(font, data)
         display.blit(st, (0, height // 2 - (st.height // 2)))
+
+    # Pause menu
+    if show_menu:
+        menu.update(font, *pygame.mouse.get_pos())
+        display.blit(menu, (menu.x, menu.y))
 
     # Draw fps counter
     fps_txt = font.render(str(round(clock.get_fps(), 0)), True, (0, 255, 0))

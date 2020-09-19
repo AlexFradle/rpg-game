@@ -758,5 +758,51 @@ class ItemDropDisplay(pygame.Surface):
             )
 
 
+class Menu(pygame.Surface):
+    def __init__(self, buttons):
+        super().__init__((MENU_WIDTH, MENU_HEIGHT), pygame.SRCALPHA)
+        self.__x = WINDOW_WIDTH // 2 - (MENU_WIDTH // 2)
+        self.__y = WINDOW_HEIGHT // 2 - (MENU_HEIGHT // 2)
+        self.__width = MENU_WIDTH
+        self.__height = MENU_HEIGHT
+        self.__buttons = buttons
+
+        self.__button_pos = [
+            pygame.Rect(
+                MENU_MARGIN_X,
+                ((self.__height / len(self.__buttons)) * i) + MENU_MARGIN_Y,
+                self.__width - (MENU_MARGIN_X * 2),
+                (self.__height / len(self.__buttons)) - (MENU_MARGIN_Y * 2)
+            ) for i in range(len(self.__buttons))
+        ]
+
+    @property
+    def x(self):
+        return self.__x
+
+    @property
+    def y(self):
+        return self.__y
+
+    def check_pressed(self, mx, my, flag=1):
+        for b, bp in zip(self.__buttons, self.__button_pos):
+            if pygame.Rect(bp.x + self.__x, bp.y + self.__y, bp.w, bp.h).collidepoint(mx, my):
+                if flag == 1:
+                    b[1]()
+                else:
+                    return bp
+
+    def update(self, font, mx, my):
+        self.fill(MENU_BACKGROUND_COLOUR)
+        focused_rect = self.check_pressed(mx, my, 2)
+        for b, bp in zip(self.__buttons, self.__button_pos):
+            pygame.draw.rect(self, MENU_BUTTON_COLOUR, bp)
+            if bp == focused_rect:
+                pygame.draw.rect(self, MENU_SELECTED, bp, 4)
+            txt = font.render(b[0], True, TEXT_COLOUR)
+            txt_size = font.size(b[0])
+            self.blit(txt, ((self.__width // 2) - (txt_size[0] // 2), bp.y + (bp.h // 2) - (txt_size[1] // 2)))
+
+
 if __name__ == '__main__':
     pass
