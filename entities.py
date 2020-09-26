@@ -9,6 +9,7 @@ from items import Item
 from utils import colour_lerp
 from random import randint
 from dataclasses import dataclass
+from math import sin, cos
 
 
 class Player(pygame.Surface):
@@ -324,6 +325,24 @@ class MeleeSwing(pygame.Surface):
     @property
     def height(self):
         return self.__height
+
+    def get_coords(self):
+        """
+        Calculate coords on melee_swing circle using the equation:
+        (x, y) = (cx + (r * cos(angle)), cy - (r * sin(angle)))
+                                            ^
+                               Inverted y due to inverted axis
+        :return: Coords on edge of the swing
+        """
+        ms_rect = pygame.Rect(
+            self.x, self.y, self.width, self.height
+        )
+        return (
+            ms_rect.centerx + ((self.width // 2) * cos(self.left)),   # x1
+            ms_rect.centery - ((self.width // 2) * sin(self.left)),   # y1
+            ms_rect.centerx + ((self.width // 2) * cos(self.right)),  # x2
+            ms_rect.centery - ((self.width // 2) * sin(self.right))   # y2
+        )
 
     def update(self) -> None:
         """
