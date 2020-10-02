@@ -5,16 +5,6 @@
 #define len(x)  (sizeof(x) / sizeof((x)[0]))
 
 
-unsigned long long gcd(unsigned long long, unsigned long long);
-unsigned long long check_coprime(unsigned long long, unsigned long long);
-unsigned long long get_coprime(unsigned long long);
-unsigned long long check_prime(unsigned long long);
-unsigned long long lcm(unsigned long long, unsigned long long);
-unsigned long long modular_multiplicative_inverse(unsigned long long, unsigned long long);
-unsigned long long encrypt(int, unsigned long long, unsigned long long);
-unsigned long long decrypt(unsigned long long, unsigned long long, unsigned long long);
-
-
 unsigned long long gcd(unsigned long long a, unsigned long long b) {
     // Using Euclid's algorithm
     unsigned long long t;
@@ -89,16 +79,6 @@ unsigned long long encrypt(int m, unsigned long long e, unsigned long long n) {
     return ((unsigned long long) pow(m, e)) % n;
 }
 
-unsigned long long big_pow(unsigned long long a, unsigned long long b){
-    // https://stackoverflow.com/questions/13553057/using-powx-y-in-large-numbers
-    unsigned long long a_pow_b = a;
-    for (int i = 0; i < b; i++){
-        printf("%llu\n", a_pow_b);
-        a_pow_b *= a;
-    }
-    return a_pow_b;
-}
-
 unsigned long long decrypt(unsigned long long c, unsigned long long d, unsigned long long n) {
     printf("c = %llu, d = %llu\n", c, d);
     return ((unsigned long long) pow(c, d)) % n;
@@ -131,6 +111,5 @@ int main() {
     for(int i = 0; i < len(decrypted); i++){
         printf("%d ", decrypted[i]);
     }
-    printf("%llu", (unsigned long long) big_pow(1622, 223));
 
 }

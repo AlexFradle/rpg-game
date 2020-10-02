@@ -128,19 +128,19 @@ class Board(pygame.Surface):
         Update the board
         :return: None
         """
-        self.fill((0, 0, 0))
+        self.fill(BOARD_BACKGROUND)
         for hor in self.hori_wall_pos:
             for h in hor:
-                pygame.draw.rect(self, (160, 82, 45), h)
+                pygame.draw.rect(self, WALL_COLOUR, h)
         for vert in self.vert_wall_pos:
             for v in vert:
-                pygame.draw.rect(self, (160, 82, 45), v)
+                pygame.draw.rect(self, WALL_COLOUR, v)
         for door in self.hori_door_pos:
             for d in door:
-                pygame.draw.rect(self, (0, 0, 0) if d.open_ else (160, 82, 45), d)
+                pygame.draw.rect(self, BOARD_BACKGROUND if d.open_ else DOOR_COLOUR, d)
         for door in self.vert_door_pos:
             for d in door:
-                pygame.draw.rect(self, (0, 0, 0) if d.open_ else (160, 82, 45), d)
+                pygame.draw.rect(self, BOARD_BACKGROUND if d.open_ else DOOR_COLOUR, d)
         for row in self.cell_pos:
             for cell in row:
-                pygame.draw.rect(self, (0, 0, 0), cell)
+                pygame.draw.rect(self, BOARD_BACKGROUND, cell)

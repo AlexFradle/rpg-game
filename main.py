@@ -4,7 +4,7 @@ from board import Board
 from entities import Player, SmallEnemy, MediumEnemy, LargeEnemy, MeleeSwing, Bullet, Bezier
 from data_loader import DataLoader
 from maze_creator import MazeCreator
-from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH, BEZIER_POINT_COLOUR
+from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH, BEZIER_POINT_COLOUR, BOARD_BACKGROUND
 from random import randint
 from utils import line_collide
 from items import ItemDrop

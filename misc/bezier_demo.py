@@ -2,7 +2,9 @@ import pygame
 import pygame.gfxdraw
 import os
 from dataclasses import dataclass
-from compiled_funcs import bezier
+from compiled_funcs import bezier as bezier_cy
+from ctypes import *
+from numpy.ctypeslib import ndpointer
 pygame.init()
 
 
@@ -31,6 +33,25 @@ class Bezier:
         return arr[i] if j == 0 else self.__B(arr, i, j - 1, t) * (1 - t) + self.__B(arr, i + 1, j - 1, t) * t
 
 
+# def bezier_c(cx: list, cy: list, nop: int) -> tuple:
+#     bezier = CDLL("bezier.dll")
+#
+#     bezier.get_x.argtypes = [POINTER(c_int), c_int]
+#     bezier.get_y.argtypes = [POINTER(c_int), c_int]
+#
+#     x_arr_point = (c_int * len(cx))(*cx)
+#     y_arr_point = (c_int * len(cy))(*cy)
+#
+#     bezier.get_x.restype = ndpointer(dtype=c_double, shape=(nop,))
+#     bezier.get_y.restype = ndpointer(dtype=c_double, shape=(nop,))
+#
+#     n = len(cx)
+#     x = list(bezier.get_x(x_arr_point, n).astype(int))
+#     y = list(bezier.get_y(y_arr_point, n).astype(int))
+#
+#     return zip(x, y)
+
+
 font = pygame.font.SysFont("courier", 15, True)
 os.environ["SDL_VIDEO_CENTERED"] = "1"
 
@@ -41,7 +62,7 @@ fps = 60
 start = None
 end = None
 c_points = []
-nop = 100
+nop = 1000
 b_points = None
 
 while running:
@@ -67,7 +88,8 @@ while running:
 
     if c_points:
         # b_points = Bezier([start] + c_points + [end], nop).get_points()
-        b_points = bezier([start] + c_points + [end], nop)
+        b_points = bezier_cy([start] + c_points + [end], nop)
+        # b_points = bezier_c(*list(zip(*([start] + c_points + [end]))), nop)
 
     if b_points:
         for b in b_points:
