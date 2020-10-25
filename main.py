@@ -59,11 +59,12 @@ class Display(pygame.Surface):
 
 
 class Game:
-    def __init__(self, display):
+    def __init__(self, display, is_host):
         self.display = display
+        self.is_host = is_host
         # Create entities
         self.player = Player()
-        self.enemies = [LargeEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190) for i in range(2)]
+        self.enemies = []
         self.melee_swing = MeleeSwing(self.player, display.hotbar[display.hotbar.selected_pos][1])
 
         # Misc Variables
@@ -76,6 +77,7 @@ class Game:
         self.name = None
         self.data = None
         self.num_pos = {pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 3, pygame.K_4: 4, pygame.K_5: 5}
+        self.enemies = [LargeEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190, self.is_host) for i in range(2)]
         self.frames = 30
         self.item_drops = []
         self.bullets = []
@@ -703,7 +705,7 @@ class Game:
 
 
 display = Display(width, height)
-game = Game(display)
+game = Game(display, True)
 game_on = True
 start_game = False
 while game_on:
@@ -722,7 +724,7 @@ while game_on:
     display.start_menu.update(game.font, *pygame.mouse.get_pos())
     window.blit(display.start_menu, (display.start_menu.x, display.start_menu.y))
     if start_game:
-        game = Game(display)
+        game = Game(display, True)
         window.blit(display, (0, 0))
         game.start()
 

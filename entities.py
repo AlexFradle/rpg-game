@@ -84,9 +84,10 @@ class Player(pygame.Surface):
 
 class Enemy(pygame.Surface):
     """Base enemy class"""
-    def __init__(self, x, y, size):
+    def __init__(self, x, y, size, is_host):
         self.__width = ENTITY_INFO[size][0]
         self.__height = ENTITY_INFO[size][1]
+        self.is_host = is_host
         super().__init__((self.__width * 2, self.__height * 2), pygame.SRCALPHA)
         self.x, self.y = x, y
         self.__max_health = ENTITY_INFO[size][2]
@@ -199,12 +200,13 @@ class Enemy(pygame.Surface):
     def update(self, closest_player: Player, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
         self.fill((0, 0, 0, 0))
         self.__board = board
-        if self.__size != "large":
-            mv_info = self.__find_path(*cur_pos, *player_pos, cell_table, closest_player)
+        if self.is_host:
+            if self.__size != "large":
+                mv_info = self.__find_path(*cur_pos, *player_pos, cell_table, closest_player)
 
-            if self.__is_moving and mv_info is not None:
-                self.x += mv_info[0]
-                self.y += mv_info[1]
+                if self.__is_moving and mv_info is not None:
+                    self.x += mv_info[0]
+                    self.y += mv_info[1]
 
         # Rotates enemy image towards player
         degrees = math.degrees(math.atan2(self.x - closest_player.x, self.y - closest_player.y))
@@ -231,40 +233,40 @@ class Enemy(pygame.Surface):
 
 
 class SmallEnemy(Enemy):
-    def __init__(self, x, y, origin=0):
-        super().__init__(x, y, "small")
+    def __init__(self, x, y, is_host, origin=0):
+        super().__init__(x, y, "small", is_host)
         self.__speed = 10
         self.origin = origin
 
     @classmethod
     def from_large_enemy(cls, parent):
-        return cls(parent.x + parent.width, parent.y + parent.height, 1)
+        return cls(parent.x + parent.width, parent.y + parent.height, parent.is_host, 1)
 
 
 class MediumEnemy(Enemy):
-    def __init__(self, x, y):
-        super().__init__(x, y, "medium")
+    def __init__(self, x, y, is_host):
+        super().__init__(x, y, "medium", is_host)
         self.__speed = 4
         self.bullets = []
 
     def update(self, closest_player: Player, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
         # Call superclass update() function for movement
         super().update(closest_player, cur_pos, player_pos, cell_table, board)
-
-        # Attack behaviour
-        if randint(1, 10) == 10:
-            self.bullets.append(
-                Bullet(
-                    self.x + self.width - board.x, self.y + self.height - board.y,
-                    closest_player.x + closest_player.width - board.x, closest_player.y + closest_player.height - board.y,
-                    DataLoader.possible_items["medium_enemy_weapon"]
+        if self.is_host:
+            # Attack behaviour
+            if randint(1, 10) == 10:
+                self.bullets.append(
+                    Bullet(
+                        self.x + self.width - board.x, self.y + self.height - board.y,
+                        closest_player.x + closest_player.width - board.x, closest_player.y + closest_player.height - board.y,
+                        DataLoader.possible_items["medium_enemy_weapon"]
+                    )
                 )
-            )
 
 
 class LargeEnemy(Enemy):
-    def __init__(self, x, y):
-        super().__init__(x, y, "large")
+    def __init__(self, x, y, is_host):
+        super().__init__(x, y, "large", is_host)
         self.l_enemy_pos = []
         self.__prev_cell = []
         self.__cur_cell = []
@@ -272,28 +274,29 @@ class LargeEnemy(Enemy):
         self.bezier_points = []
 
     def update(self, closest_player: Player, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
-        # Stop enemy from moving
-        self.__is_moving = False
-
-        # Get path to player
-        path = self._get_path(*cur_pos, *player_pos, cell_table)
-
         # Call superclass update function to change enemy visual
         super().update(closest_player, cur_pos, player_pos, cell_table, board)
 
-        # Move to next cell if it is further than 1 away from the player
-        next_cell = board.cell_pos[path[1 if len(path) > 2 else 0][1]][path[1 if len(path) > 2 else 0][0]]
+        if self.is_host:
+            # Stop enemy from moving
+            self.__is_moving = False
 
-        # New x and y pos in the middle of the cell
-        new_x = (next_cell.x + board.x + (next_cell.w // 2) - self.width)
-        new_y = (next_cell.y + board.y + (next_cell.h // 2) - self.height)
+            # Get path to player
+            path = self._get_path(*cur_pos, *player_pos, cell_table)
 
-        # Only change x and y if there isn't a large enemy already in there
-        self.x, self.y = (new_x, new_y) if (new_x, new_y) not in self.l_enemy_pos else (self.x, self.y)
+            # Move to next cell if it is further than 1 away from the player
+            next_cell = board.cell_pos[path[1 if len(path) > 2 else 0][1]][path[1 if len(path) > 2 else 0][0]]
 
-        # Spawn small enemy
-        if randint(1, 25) == 25:
-            self.spawned_enemies.append(SmallEnemy.from_large_enemy(self))
+            # New x and y pos in the middle of the cell
+            new_x = (next_cell.x + board.x + (next_cell.w // 2) - self.width)
+            new_y = (next_cell.y + board.y + (next_cell.h // 2) - self.height)
+
+            # Only change x and y if there isn't a large enemy already in there
+            self.x, self.y = (new_x, new_y) if (new_x, new_y) not in self.l_enemy_pos else (self.x, self.y)
+
+            # Spawn small enemy
+            if randint(1, 25) == 25:
+                self.spawned_enemies.append(SmallEnemy.from_large_enemy(self))
 
 
 class MeleeSwing(pygame.Surface):
@@ -462,40 +465,6 @@ class Bezier:
             B(i, j) = B(i, j - 1) * (1 - t) + B(i + 1, j - 1) * t
         """
         return arr[i] if j == 0 else self.__B(arr, i, j - 1, t) * (1 - t) + self.__B(arr, i + 1, j - 1, t) * t
-
-
-class TeleportAnimation(pygame.Surface):
-    def __init__(self, x, y, angle):
-        self.__width = CELL_WIDTH + WALL_VERTICAL_WIDTH
-        self.__height = ENTITY_INFO["large"][1]
-        super().__init__((self.__width, self.__height), pygame.SRCALPHA)
-        self.x = x
-        self.y = y
-        self.angle = angle
-        self.divs = 15
-        self.__segments = [pygame.Rect((self.__width // self.divs) * i, 0, self.__width // self.divs, self.__height) for i in range(self.divs)]
-        self.__cur_frame = 0
-        self.__colour_grad = [i for i in colour_lerp((255, 255, 255), (255, 60, 0), self.divs)]
-
-    @property
-    def width(self):
-        return self.__width
-
-    @property
-    def height(self):
-        return self.__height
-
-    def update(self):
-        # takes 30 frames
-        self.fill((0, 0, 0, 0))
-        if self.__cur_frame < 15:
-            for i in range(self.__cur_frame):
-                pygame.draw.rect(self, self.__colour_grad[i], self.__segments[i])
-            self.__cur_frame += 1
-        elif 15 <= self.__cur_frame <= 30:
-            for i in range(self.__cur_frame - 15, 15):
-                pygame.draw.rect(self, self.__colour_grad[i], self.__segments[i])
-            self.__cur_frame += 1
 
 
 if __name__ == '__main__':
