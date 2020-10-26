@@ -1,6 +1,7 @@
 import socket
 import threading
 import json
+from constants import GNS_IP, GNS_PORT
 
 
 class GNS:
@@ -45,7 +46,7 @@ class GNS:
                     print(f"Sent all host ports to -> [{addr[0]}:{addr[1]}]")
                 elif data["request"] == "HOST ADD":
                     print(f"Added to host list -> [{addr[0]}:{addr[1]}]")
-                    self.hosts.append({"name": data["payload"]["name"], "password": data["payload"]["password"], "port": addr[1]})
+                    self.hosts.append({"name": data["payload"]["name"], "password": data["payload"]["password"], "address": f"{addr[0]}:{addr[1]}"})
                     print(self.hosts)
             except:
                 # Client disconnected
@@ -53,12 +54,12 @@ class GNS:
                 # Removes client from clients list
                 self.clients.remove(clnt)
                 for i in self.hosts:
-                    if i["port"] == addr[1]:
+                    if i["address"] == f"{addr[0]}:{addr[1]}":
                         self.hosts.remove(i)
                 clnt.close()
                 return False
 
 
 if __name__ == '__main__':
-    s = GNS("192.168.1.103", 50000)
+    s = GNS(GNS_IP, GNS_PORT)
     s.listen()

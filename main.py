@@ -1,14 +1,16 @@
 import pygame
-from ui import Hotbar, Inventory, Inspector, Equipment, Attributes, Tab, HealthBar, ManaBar, XPBar, SkillTree, ItemDropDisplay, Menu
+from ui import Hotbar, Inventory, Inspector, Equipment, Attributes, Tab, HealthBar, ManaBar, XPBar, SkillTree, ItemDropDisplay, Menu, SelectMenu
 from board import Board
 from entities import Player, SmallEnemy, MediumEnemy, LargeEnemy, MeleeSwing, Bullet, Bezier
 from data_loader import DataLoader
 from maze_creator import MazeCreator
-from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH, BEZIER_POINT_COLOUR, BOARD_BACKGROUND
+from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH, BEZIER_POINT_COLOUR, BOARD_BACKGROUND, GNS_IP, GNS_PORT
 from random import randint
 from utils import line_collide
 from items import ItemDrop
 from os import environ
+import socket
+import json
 pygame.init()
 
 environ["SDL_VIDEO_CENTERED"] = "1"
@@ -48,7 +50,7 @@ class Display(pygame.Surface):
 
         self.start_menu = Menu([
             ("Singleplayer", lambda: exec("start_game = True", globals())),
-            ("Multiplayer", lambda: exec("", globals())),
+            ("Multiplayer", lambda: exec("multiplayer_pressed = True", globals())),
             ("Quit", lambda: exec("game_on = False", globals()))
         ])
         self.pause_menu = Menu([
@@ -706,27 +708,67 @@ class Game:
 
 display = Display(width, height)
 game = Game(display, True)
+multiplayer_game_menu = SelectMenu([])
 game_on = True
 start_game = False
+start_screen = True
+multiplayer_pressed = False
+loaded_servers = False
+select_menu_font = pygame.font.SysFont("Courier", 20, True)
 while game_on:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             game_on = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                game_on = False
+                multiplayer_pressed = False
+                start_screen = True
+                loaded_servers = False
+            if event.key == pygame.K_LEFT:
+                if multiplayer_pressed:
+                    multiplayer_game_menu.current_page -= 1
+            if event.key == pygame.K_RIGHT:
+                if multiplayer_pressed:
+                    multiplayer_game_menu.current_page += 1
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 display.start_menu.check_pressed(*pygame.mouse.get_pos())
 
     window.fill((0, 0, 0))
 
-    display.start_menu.update(game.font, *pygame.mouse.get_pos())
-    window.blit(display.start_menu, (display.start_menu.x, display.start_menu.y))
+    if start_screen:
+        display.start_menu.update(game.font, *pygame.mouse.get_pos())
+        window.blit(display.start_menu, (display.start_menu.x, display.start_menu.y))
+
     if start_game:
         game = Game(display, True)
         window.blit(display, (0, 0))
         game.start()
+
+    if multiplayer_pressed:
+        if not loaded_servers:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect((GNS_IP, GNS_PORT))
+                req = {"request": "GET ALL SERVERS", "payload": {}}
+                s.send(json.dumps(req).encode())
+                data = json.loads(s.recv(2048).decode())
+                s.close()
+                if data:
+                    multiplayer_game_menu = SelectMenu([
+                        ((i["name"], i["address"]), exec("")) for i in data
+                    ])
+                    loaded_servers = True
+                    start_screen = False
+                else:
+                    print("No servers on")
+                    multiplayer_pressed = False
+            except ConnectionRefusedError:
+                print("GNS not on")
+                multiplayer_pressed = False
+        else:
+            window.blit(multiplayer_game_menu, (multiplayer_game_menu.x, multiplayer_game_menu.y))
+            multiplayer_game_menu.update(select_menu_font, *pygame.mouse.get_pos())
 
     pygame.display.update()
     clock.tick(30)
