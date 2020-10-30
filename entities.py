@@ -13,11 +13,11 @@ from math import sin, cos
 
 
 class Player(pygame.Surface):
-    def __init__(self):
+    def __init__(self, name, player_num):
         self.__width = ENTITY_INFO["player"][0]
         self.__height = ENTITY_INFO["player"][1]
         super().__init__((self.__width * 2, self.__height * 2), pygame.SRCALPHA)
-        self.__img = pygame.image.load(f"assets/{WINDOW_WIDTH}x{WINDOW_HEIGHT}/player.png")
+        self.__img = pygame.image.load(f"assets/{WINDOW_WIDTH}x{WINDOW_HEIGHT}/player_{player_num}.png")
         self.x, self.y = 200, 200
         self.__max_health, self.__health = None, None
         self.__max_mana, self.__mana = None, None
@@ -25,6 +25,7 @@ class Player(pygame.Surface):
         self.melee_cooldown = 0
         self.mv_amount = PLAYER_MV_AMOUNT
         self.__damage_cooldown = 0
+        self.name = name
 
     @property
     def width(self):
@@ -57,6 +58,9 @@ class Player(pygame.Surface):
     def mana(self, value):
         pass
 
+    def get_normalised_pos(self, board):
+        return self.x - board.x, self.y - board.y
+
     def reset_health_and_mana(self):
         self.__max_health = (100 * DataLoader.player_data["level"]) + (DataLoader.player_data["attributes"]["health"] * 20)
         self.__max_mana = (50 * DataLoader.player_data["level"]) + (DataLoader.player_data["attributes"]["mana"] * 10)
@@ -80,6 +84,22 @@ class Player(pygame.Surface):
 
         # Check if the player has leveled up
         self.reset_level()
+
+
+class Teammate(pygame.Surface):
+    def __init__(self, x, y, name, player_num):
+        self.__width = ENTITY_INFO["player"][0]
+        self.__height = ENTITY_INFO["player"][1]
+        super().__init__((self.__width * 2, self.__height * 2), pygame.SRCALPHA)
+        self.__img = pygame.image.load(f"assets/{WINDOW_WIDTH}x{WINDOW_HEIGHT}/player_{player_num}.png")
+        self.x, self.y = x, y
+        self.name = name
+
+    def update(self, mx, my):
+        self.fill((0, 0, 0, 0))
+        degrees = math.degrees(math.atan2((self.x + self.__width) - mx, (self.y + self.__height) - my))
+        rotated_img = pygame.transform.rotate(self.__img, degrees)
+        self.blit(rotated_img, (self.__width // 2, self.__height // 2))
 
 
 class Enemy(pygame.Surface):
@@ -117,6 +137,12 @@ class Enemy(pygame.Surface):
         if self.__damage_cooldown == 0:
             self.__health = value
             self.__damage_cooldown = ENEMY_DAMAGE_COOLDOWN
+
+    def change_health_value(self, value):
+        self.__health = value
+
+    def get_normalised_pos(self, board):
+        return self.x - board.x, self.y - board.y
 
     def __goto(self, prev_cell: tuple, new_cell: tuple) -> tuple:
         """
@@ -411,6 +437,14 @@ class Bullet(pygame.Rect):
         self.__num_of_divisions = dist / (MAX_BULLET_SPEED * (weapon["proj_speed"] / 100))
         self.__cur_div = 1
 
+    @property
+    def width(self):
+        return self.__width
+
+    @property
+    def height(self):
+        return self.__height
+
     def update(self, dt: float) -> None:
         """
         Updates the Bullet class
@@ -440,6 +474,24 @@ class Bullet(pygame.Rect):
             self.__cur_div += 1
         else:
             self.moving = False
+
+
+class PseudoBullet(pygame.Rect):
+    def __init__(self, x, y, colour, size, damage, from_enemy):
+        self.__width = size
+        self.__height = size
+        super().__init__(x, y, self.__width, self.__height)
+        self.colour = colour
+        self.damage = damage
+        self.from_enemy = from_enemy
+
+    @property
+    def width(self):
+        return self.__width
+
+    @property
+    def height(self):
+        return self.__height
 
 
 @dataclass

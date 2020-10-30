@@ -46,5 +46,7 @@ Starting and joining game server
 
 ALL CLIENTS WILL BE ONE FRAME BEHIND THE HOST
 
+4 players max
+
 ISSUES:
 1. NETWORKING ENEMY AND PLAYER BULLETS

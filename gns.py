@@ -45,8 +45,8 @@ class GNS:
                     clnt.send(json.dumps(self.hosts).encode())
                     print(f"Sent all host ports to -> [{addr[0]}:{addr[1]}]")
                 elif data["request"] == "HOST ADD":
-                    print(f"Added to host list -> [{addr[0]}:{addr[1]}]")
-                    self.hosts.append({"name": data["payload"]["name"], "password": data["payload"]["password"], "address": f"{addr[0]}:{addr[1]}"})
+                    print(f"Added to host list -> [{data['payload']['address']}]")
+                    self.hosts.append(data)
                     print(self.hosts)
             except:
                 # Client disconnected

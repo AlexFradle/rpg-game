@@ -37,11 +37,11 @@ class Door(pygame.Rect):
 
 
 class Board(pygame.Surface):
-    def __init__(self, width, height):
-        super().__init__((width, height), pygame.SRCALPHA)
-        self.__width = width
-        self.__height = height
-        self.__grid = self.load_maze("data/maze.txt")
+    def __init__(self, grid=None):
+        super().__init__((BOARD_WIDTH, BOARD_HEIGHT), pygame.SRCALPHA)
+        self.__width = BOARD_WIDTH
+        self.__height = BOARD_HEIGHT
+        self.__grid = self.load_maze(MAZE_PATH) if grid is None else grid
         self.x = 0
         self.y = 0
         cell_num = self.__grid[1].count("X")
@@ -75,6 +75,10 @@ class Board(pygame.Surface):
     @property
     def height(self):
         return self.__height
+
+    @property
+    def grid(self):
+        return self.__grid
 
     @staticmethod
     def load_maze(fn: str) -> list:

@@ -7,6 +7,9 @@ test_req = {"request": "HOST ADD", "payload": {"name": "test game 2", "password"
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("192.168.1.103", 50000))
 s.send(json.dumps(test_req).encode())
-data = s.recv(2048)
-print(data)
+while True:
+    a = input(">>>")
+    if a == "e":
+        break
 s.close()
+

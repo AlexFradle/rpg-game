@@ -66,6 +66,9 @@ ENTITY_INFO = {
     "large": (60, 60, 50)
 }
 
+BOARD_WIDTH = 2050
+BOARD_HEIGHT = 2050
+
 WALL_VERTICAL_WIDTH = 20
 WALL_HORIZONTAL_WIDTH = 400
 WALL_VERTICAL_HEIGHT = 400
@@ -104,6 +107,7 @@ GNS_IP = "192.168.1.103"
 GNS_PORT = 50000
 
 # File paths
+MAZE_PATH = "data/maze.txt"
 RARITIES_PATH = "data/colours.json"
 ITEMS_PATH = "data/items.json"
 PLAYER_DATA_PATH = "data/player_data.json"
