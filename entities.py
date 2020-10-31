@@ -132,6 +132,10 @@ class Enemy(pygame.Surface):
     def health(self):
         return self.__health
 
+    @property
+    def size(self):
+        return self.__size
+
     @health.setter
     def health(self, value):
         if self.__damage_cooldown == 0:
@@ -481,6 +485,7 @@ class PseudoBullet(pygame.Rect):
         self.__width = size
         self.__height = size
         super().__init__(x, y, self.__width, self.__height)
+        self.x, self.y = x, y
         self.colour = colour
         self.damage = damage
         self.from_enemy = from_enemy

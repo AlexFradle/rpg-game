@@ -18,9 +18,34 @@ class DataLoader:
     __funcs = None
 
     def __init__(self):
+        if DataLoader.player_name not in json.load(open(PLAYER_DATA_PATH)):
+            self.create_new_player()
+
         DataLoader.player_data = json.load(open(PLAYER_DATA_PATH))[DataLoader.player_name]
         DataLoader.__funcs = {i[0]: i[1] for i in inspect.getmembers(self, inspect.ismethod) if not i[0].startswith("__")}
         self.__resize_images()
+
+    @staticmethod
+    def create_new_player():
+        with open(PLAYER_DATA_PATH) as f:
+            file = json.load(f)
+
+        # TODO: Make it so that player can choose class
+        file[DataLoader.player_name] = {
+            "armor": {"head": "basic_head", "chest": "basic_chest", "legs": "basic_legs", "feet": "basic_feet"},
+            "hotbar": ["axe", None, None, None, None],
+            "inventory": [None] * 20,
+            "attributes": {"health": 1, "mana": 1, "strength": 1, "defense": 1},
+            "skills": {},
+            "level": 1,
+            "xp": 0,
+            "unused_sp": 0,
+            "coins": 0,
+            "class": "mage"
+        }
+
+        with open(PLAYER_DATA_PATH, "w") as f:
+            json.dump(file, f, indent=4)
 
     @staticmethod
     def change_file(func_name: str, *args) -> None:
@@ -49,7 +74,7 @@ class DataLoader:
         DataLoader.player_data = file[DataLoader.player_name]
 
         with open(PLAYER_DATA_PATH, "w") as f:
-            json.dump(file, f, indent=2)
+            json.dump(file, f, indent=4)
 
     @staticmethod
     def __resize_images() -> None:

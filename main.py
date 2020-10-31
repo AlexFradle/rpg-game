@@ -4,7 +4,7 @@ from board import Board
 from entities import Player, SmallEnemy, MediumEnemy, LargeEnemy, MeleeSwing, Bullet, Bezier, PseudoBullet
 from data_loader import DataLoader
 from maze_creator import MazeCreator
-from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH, BEZIER_POINT_COLOUR, GNS_IP, GNS_PORT
+from constants import PLAYER_NAME, WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH, BEZIER_POINT_COLOUR, GNS_IP, GNS_PORT
 from random import randint
 from utils import line_collide
 from items import ItemDrop
@@ -25,7 +25,6 @@ pygame.mouse.set_cursor(*pygame.cursors.broken_x)
 
 # Define player name here, this is then set as class attribute rather than instance
 # DataLoader then created to call __init__ to load the player data
-PLAYER_NAME = "alex"
 DataLoader.player_name = PLAYER_NAME
 _ = DataLoader()
 
@@ -65,18 +64,19 @@ class Display(pygame.Surface):
                 "start_single_game = False;"
                 "start_multiplayer_game = False;"
                 "join_multiplayer_game = False;"
-                "join_multiplayer_pressed = False",
+                "join_multiplayer_pressed = False;"
+                "start_screen = True",
                 globals()
             ))
         ])
 
 
 class Game:
-    def __init__(self, display, is_host, is_singleplayer, server_address=None):
+    def __init__(self, display, is_host, is_singleplayer, server_ip=None, server_port=None, host_address=None):
         self.display = display
         self.is_host = is_host
         self.is_singleplayer = is_singleplayer
-        self.player_name = PLAYER_NAME
+        self.player_name = PLAYER_NAME if is_host else "player 2"
         # Create entities
         self.player = Player(self.player_name, 1)
         self.enemies = []
@@ -103,20 +103,19 @@ class Game:
         # Networking
         # Host of multiplayer game
         if self.is_host and not self.is_singleplayer:
-            process = subprocess.run(["ipconfig"], stdout=subprocess.PIPE)
-            out = process.stdout.decode()
-            ipv4 = out[out.find("IPv4"):][out[out.find("IPv4"):].find("1"):out[out.find("IPv4"):].find("\r")]
-            self.game_server = GameServer(ipv4, randint(GNS_PORT + 1, 55000), self)
+            self.game_server = GameServer(server_ip, server_port, self)
             threading.Thread(target=self.game_server.start, daemon=True).start()
 
         # Client of multiplayer game
         elif not self.is_host and not self.is_singleplayer:
-            print(server_address.split(":")[0], int(server_address.split(":")[1]))
-            self.client = GameClient(server_address.split(":")[0], int(server_address.split(":")[1]), self)
+            self.client = GameClient(host_address.split(":")[0], int(host_address.split(":")[1]), self)
             self.client.connect()
 
         # Make melee swing using correct player
         self.melee_swing = MeleeSwing(self.player, display.hotbar[display.hotbar.selected_pos][1])
+
+        # Use new maze if host, else inherit the host maze
+        self.board = Board() if self.is_host else Board(grid=self.grid)
 
     @staticmethod
     def inv_collide(inv: Inventory, mx: int, my: int) -> tuple:
@@ -236,8 +235,6 @@ class Game:
             return item_drops
 
     def start(self):
-        # Use new maze if host, else inherit the host maze
-        board = Board() if self.is_host else Board(grid=self.grid)
         healthbar = HealthBar(self.player.health)
         manabar = ManaBar(self.player.mana)
         go_right, go_left, go_up, go_down, = False, False, False, False
@@ -366,16 +363,16 @@ class Game:
 
             # Player movement
             if not self.show_inv and not self.show_menu:
-                collided_with_door = board.door_collide(self.player)
-                collided_with_wall = board.wall_collide(self.player)
+                collided_with_door = self.board.door_collide(self.player)
+                collided_with_wall = self.board.wall_collide(self.player)
                 if (collided_with_door == "not on door" and not collided_with_wall) or collided_with_door == "door open":
                     if go_right:
                         player_rect = pygame.Rect(
                             self.player.x + mv_amount, self.player.y, self.player.width, self.player.height
                         )
-                        if (board.door_collide(player_rect) == "not on door" and not board.wall_collide(player_rect)) or board.door_collide(player_rect) == "door open":
-                            if pygame.Rect(board.x - mv_amount, board.y, board.width, board.height).contains(display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
-                                board.x -= mv_amount
+                        if (self.board.door_collide(player_rect) == "not on door" and not self.board.wall_collide(player_rect)) or self.board.door_collide(player_rect) == "door open":
+                            if pygame.Rect(self.board.x - mv_amount, self.board.y, self.board.width, self.board.height).contains(display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
+                                self.board.x -= mv_amount
                                 for enemy in self.enemies.values():
                                     enemy.x -= mv_amount
                             else:
@@ -384,9 +381,9 @@ class Game:
                         player_rect = pygame.Rect(
                             self.player.x - mv_amount, self.player.y, self.player.width, self.player.height
                         )
-                        if (board.door_collide(player_rect) == "not on door" and not board.wall_collide(player_rect)) or board.door_collide(player_rect) == "door open":
-                            if pygame.Rect(board.x + mv_amount, board.y, board.width, board.height).contains(display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
-                                board.x += mv_amount
+                        if (self.board.door_collide(player_rect) == "not on door" and not self.board.wall_collide(player_rect)) or self.board.door_collide(player_rect) == "door open":
+                            if pygame.Rect(self.board.x + mv_amount, self.board.y, self.board.width, self.board.height).contains(display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
+                                self.board.x += mv_amount
                                 for enemy in self.enemies.values():
                                     enemy.x += mv_amount
                             else:
@@ -395,9 +392,9 @@ class Game:
                         player_rect = pygame.Rect(
                             self.player.x, self.player.y - mv_amount, self.player.width, self.player.height
                         )
-                        if (board.door_collide(player_rect) == "not on door" and not board.wall_collide(player_rect)) or board.door_collide(player_rect) == "door open":
-                            if pygame.Rect(board.x, board.y + mv_amount, board.width, board.height).contains(display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
-                                board.y += mv_amount
+                        if (self.board.door_collide(player_rect) == "not on door" and not self.board.wall_collide(player_rect)) or self.board.door_collide(player_rect) == "door open":
+                            if pygame.Rect(self.board.x, self.board.y + mv_amount, self.board.width, self.board.height).contains(display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
+                                self.board.y += mv_amount
                                 for enemy in self.enemies.values():
                                     enemy.y += mv_amount
                             else:
@@ -406,9 +403,9 @@ class Game:
                         player_rect = pygame.Rect(
                             self.player.x, self.player.y + mv_amount, self.player.width, self.player.height
                         )
-                        if (board.door_collide(player_rect) == "not on door" and not board.wall_collide(player_rect)) or board.door_collide(player_rect) == "door open":
-                            if pygame.Rect(board.x, board.y - mv_amount, board.width, board.height).contains(display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
-                                board.y -= mv_amount
+                        if (self.board.door_collide(player_rect) == "not on door" and not self.board.wall_collide(player_rect)) or self.board.door_collide(player_rect) == "door open":
+                            if pygame.Rect(self.board.x, self.board.y - mv_amount, self.board.width, self.board.height).contains(display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
+                                self.board.y -= mv_amount
                                 for enemy in self.enemies.values():
                                     enemy.y -= mv_amount
                             else:
@@ -456,13 +453,13 @@ class Game:
                         "st_pos": rect
                     }
 
-            player_cell_y, player_cell_x = board.cell_collide(self.player)
+            player_cell_y, player_cell_x = self.board.cell_collide(self.player)
             player_puz_x, player_puz_y = self.display.maze.cell_table[player_cell_x, player_cell_y]
 
             # Item drop pickup
             for it_dr_pos, it_dr in enumerate(self.item_drops):
                 player_rect = pygame.Rect(
-                    self.player.x - board.x, self.player.y - board.y, self.player.width, self.player.height
+                    self.player.x - self.board.x, self.player.y - self.board.y, self.player.width, self.player.height
                 )
                 item_rect = pygame.Rect(it_dr.x, it_dr.y, it_dr.width, it_dr.height)
                 if player_rect.colliderect(item_rect):
@@ -492,10 +489,10 @@ class Game:
                                     if self.player.mana - cur_item["mana_used"] >= 0:
                                         # player.mana -= cur_item["mana_used"]
                                         self.bullets[self.player_name][self.next_bullet_index] = Bullet(
-                                                abs(board.x) + self.player.x + self.player.width,
-                                                abs(board.y) + self.player.y + self.player.height,
-                                                abs(board.x) + mx,
-                                                abs(board.y) + my,
+                                                abs(self.board.x) + self.player.x + self.player.width,
+                                                abs(self.board.y) + self.player.y + self.player.height,
+                                                abs(self.board.x) + mx,
+                                                abs(self.board.y) + my,
                                                 cur_item
                                         )
                                         self.next_bullet_index += 1
@@ -521,7 +518,7 @@ class Game:
             # Kill enemy if health < 1
             for ind, e in list(self.enemies.items()):
                 if e.health < 1:
-                    edrps = self.kill_enemy(self.enemies, ind, board, self.item_drops)
+                    edrps = self.kill_enemy(self.enemies, ind, self.board, self.item_drops)
                     if edrps is not None:
                         self.item_drops = edrps
 
@@ -531,19 +528,19 @@ class Game:
             self.display.fill((0, 0, 0))
 
             # Update board surface
-            board.update()
+            self.board.update()
 
             # Draw item drops to screen
             for it_dr in self.item_drops:
                 it_dr.update()
-                board.blit(it_dr, (it_dr.x, it_dr.y))
+                self.board.blit(it_dr, (it_dr.x, it_dr.y))
 
             # Update enemies
             if not self.show_menu or not self.is_singleplayer:
                 for enemy in list(self.enemies.values()):
                     l_enemy_pos = [(i.x, i.y) for i in self.enemies.values() if isinstance(i, LargeEnemy)]
 
-                    r, c = board.cell_collide(enemy)
+                    r, c = self.board.cell_collide(enemy)
                     puz_x, puz_y = self.display.maze.cell_table[c, r]
 
                     if isinstance(enemy, LargeEnemy):
@@ -554,21 +551,21 @@ class Game:
                         enemy.spawned_enemies = []
 
                         sml_enemies = [
-                            (i.x + i.width - board.x, i.y + i.height - board.y)
+                            (i.x + i.width - self.board.x, i.y + i.height - self.board.y)
                             for i in self.enemies.values() if isinstance(i, SmallEnemy) and i.origin == 1
                         ]
                         enemy.bezier_points = Bezier(
-                            [(enemy.x + enemy.width - board.x, enemy.y + enemy.height - board.y)] +
+                            [(enemy.x + enemy.width - self.board.x, enemy.y + enemy.height - self.board.y)] +
                             sml_enemies[:len(sml_enemies) if len(sml_enemies) < 4 else 4] +
-                            [(self.player.x + self.player.width - board.x, self.player.y + self.player.height - board.y)], 100
+                            [(self.player.x + self.player.width - self.board.x, self.player.y + self.player.height - self.board.y)], 100
                         ).get_points()
 
                         if enemy.bezier_points:
                             for point in enemy.bezier_points:
-                                pygame.draw.circle(board, BEZIER_POINT_COLOUR, point, 2)
+                                pygame.draw.circle(self.board, BEZIER_POINT_COLOUR, point, 2)
 
                     enemy.update(
-                        self.player, (puz_x, puz_y), (player_puz_x, player_puz_y), self.display.maze.cell_table, board
+                        self.player, (puz_x, puz_y), (player_puz_x, player_puz_y), self.display.maze.cell_table, self.board
                     )
 
                     if isinstance(enemy, MediumEnemy):
@@ -582,28 +579,27 @@ class Game:
             if not self.show_menu or not self.is_singleplayer:
                 for name in self.bullets:
                     for bp, bullet in list(self.bullets[name].items()):
-                        bullet_collided = self.bullet_collide(bullet, board, self.player, self.enemies)
+                        bullet_collided = self.bullet_collide(bullet, self.board, self.player, self.enemies)
                         if isinstance(bullet, Bullet):
                             if bullet_collided:
                                 bullet.moving = False
                             if bullet.moving:
                                 bullet.update(delta_time_scalar)
-                                pygame.draw.rect(board, bullet.colour, bullet)
+                                pygame.draw.rect(self.board, bullet.colour, bullet)
                             else:
                                 del self.bullets[name][bp]
                         else:
+                            pygame.draw.rect(self.board, bullet.colour, bullet)
                             if bullet_collided:
                                 del self.bullets[name][bp]
-                            else:
-                                pygame.draw.rect(board, bullet.colour, bullet)
 
-            # Draw other players to the screen - ASSUMES NORMALISED POSITION
-            for op in self.other_players.values():
+            # Draw other players to the screen
+            for op in list(self.other_players.values()):
                 op.update(*pygame.mouse.get_pos())
-                board.blit(op, (op.x, op.y))
+                self.board.blit(op, (op.x, op.y))
 
             # Draw board to screen
-            self.display.blit(board, (board.x, board.y))
+            self.display.blit(self.board, (self.board.x, self.board.y))
 
             # Draw enemies to screen
             for enemy in self.enemies.values():
@@ -765,6 +761,12 @@ class Game:
 
             # Update whole screen
             pygame.display.update()
+        # TODO: Close the server properly
+        # if self.is_host and not self.is_singleplayer:
+        #     self.game_server.sock.shutdown(socket.SHUT_RDWR)
+        #     self.game_server.sock.close()
+        if not self.is_host and not self.is_singleplayer:
+            self.client.sock.close()
 
 
 display = Display(width, height)
@@ -817,18 +819,30 @@ while game_on:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((GNS_IP, GNS_PORT))
-            req = {"request": "HOST ADD", "payload": {"name": "test game 1", "password": "test password", "address"}}
+            process = subprocess.run(["ipconfig"], stdout=subprocess.PIPE)
+            out = process.stdout.decode()
+            ipv4 = out[out.find("IPv4"):][out[out.find("IPv4"):].find("1"):out[out.find("IPv4"):].find("\r")]
+            port = randint(GNS_PORT + 1, 55000)
+            req = {
+                "request": "HOST ADD",
+                "payload": {"name": "test game 1", "password": "test password", "address": f"{ipv4}:{port}"}
+            }
             s.send(json.dumps(req).encode())
-            game = Game(display, True, False)
+            game = Game(display, True, False, server_ip=ipv4, server_port=port)
             window.blit(display, (0, 0))
             game.start()
+            req = {
+                "request": "HOST REMOVE",
+                "payload": req["payload"]
+            }
+            s.send(json.dumps(req).encode())
             s.close()
         except ConnectionRefusedError:
             print("GNS not on")
             start_multiplayer_game = False
 
     if join_multiplayer_game:
-        game = Game(display, False, False, svr_addr)
+        game = Game(display, False, False, host_address=svr_addr)
         window.blit(display, (0, 0))
         game.start()
 

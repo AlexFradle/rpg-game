@@ -46,16 +46,16 @@ class GNS:
                     print(f"Sent all host ports to -> [{addr[0]}:{addr[1]}]")
                 elif data["request"] == "HOST ADD":
                     print(f"Added to host list -> [{data['payload']['address']}]")
-                    self.hosts.append(data)
+                    self.hosts.append(data["payload"])
                     print(self.hosts)
+                elif data["request"] == "HOST REMOVE":
+                    print(f"Removed host from list -> [{data['payload']['address']}]")
+                    self.hosts.remove(data["payload"])
             except:
                 # Client disconnected
                 print(f"Disconnected -> [{addr[0]}:{addr[1]}]")
                 # Removes client from clients list
                 self.clients.remove(clnt)
-                for i in self.hosts:
-                    if i["address"] == f"{addr[0]}:{addr[1]}":
-                        self.hosts.remove(i)
                 clnt.close()
                 return False
 
