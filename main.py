@@ -76,7 +76,7 @@ class Game:
         self.display = display
         self.is_host = is_host
         self.is_singleplayer = is_singleplayer
-        self.player_name = PLAYER_NAME if is_host else "player 2"
+        self.player_name = PLAYER_NAME if self.is_host else "player 2"
         # Create entities
         self.player = Player(self.player_name, 1)
         self.enemies = []
@@ -173,14 +173,16 @@ class Game:
         pl_rect = pygame.Rect(
             player.x + (player.width // 2), player.y + (player.height // 2), player.width, player.height
         )
+
+        # Instead of adjusting player the bullet is adjusted, no reason
+        adjusted_b = pygame.Rect(b.x + board.x, b.y + board.y, b.w, b.h)
+
         if isinstance(b, PseudoBullet):
             if b.from_enemy:
-                if b.colliderect(pl_rect):
+                if adjusted_b.colliderect(pl_rect):
                     player.health -= b.damage
                     return True
         else:
-            # Instead of adjusting player the bullet is adjusted, no reason
-            adjusted_b = pygame.Rect(b.x + board.x, b.y + board.y, b.w, b.h)
             if b.from_enemy:
                 if adjusted_b.colliderect(pl_rect):
                     player.health -= b.damage
@@ -540,8 +542,11 @@ class Game:
                 for enemy in list(self.enemies.values()):
                     l_enemy_pos = [(i.x, i.y) for i in self.enemies.values() if isinstance(i, LargeEnemy)]
 
-                    r, c = self.board.cell_collide(enemy)
-                    puz_x, puz_y = self.display.maze.cell_table[c, r]
+                    if self.is_host:
+                        r, c = self.board.cell_collide(enemy)
+                        puz_x, puz_y = self.display.maze.cell_table[c, r]
+                    else:
+                        puz_x, puz_y = None, None
 
                     if isinstance(enemy, LargeEnemy):
                         enemy.l_enemy_pos = l_enemy_pos
@@ -557,8 +562,8 @@ class Game:
                         enemy.bezier_points = Bezier(
                             [(enemy.x + enemy.width - self.board.x, enemy.y + enemy.height - self.board.y)] +
                             sml_enemies[:len(sml_enemies) if len(sml_enemies) < 4 else 4] +
-                            [(self.player.x + self.player.width - self.board.x, self.player.y + self.player.height - self.board.y)], 100
-                        ).get_points()
+                            [(self.player.x + self.player.width - self.board.x, self.player.y + self.player.height - self.board.y)], 1000
+                        ).get_points_c()
 
                         if enemy.bezier_points:
                             for point in enemy.bezier_points:
@@ -878,3 +883,4 @@ while game_on:
     clock.tick(30)
 
 pygame.quit()
+

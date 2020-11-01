@@ -10,6 +10,9 @@ from utils import colour_lerp
 from random import randint
 from dataclasses import dataclass
 from math import sin, cos
+from collections import namedtuple
+from ctypes import *
+from numpy.ctypeslib import ndpointer
 
 
 class Player(pygame.Surface):
@@ -26,6 +29,7 @@ class Player(pygame.Surface):
         self.mv_amount = PLAYER_MV_AMOUNT
         self.__damage_cooldown = 0
         self.name = name
+        self.__player_shell = namedtuple("player_shell", ["x", "y", "name"])
 
     @property
     def width(self):
@@ -58,8 +62,8 @@ class Player(pygame.Surface):
     def mana(self, value):
         pass
 
-    def get_normalised_pos(self, board):
-        return self.x - board.x, self.y - board.y
+    def get_normalised_pos(self, board, flag=1):
+        return (self.x - board.x, self.y - board.y) if flag == 1 else self.__player_shell(self.x - board.x, self.y - board.y, self.name)
 
     def reset_health_and_mana(self):
         self.__max_health = (100 * DataLoader.player_data["level"]) + (DataLoader.player_data["attributes"]["health"] * 20)
@@ -190,7 +194,7 @@ class Enemy(pygame.Surface):
         self.y = self.y + ((1 / num_of_divisions) * (player_y - self.y))
 
     @staticmethod
-    def _get_path(start_x, start_y, end_x, end_y, cell_table):
+    def _get_path(start_x: int, start_y: int, end_x: int, end_y: int, cell_table: dict) -> list:
         # Columns and rows set to 0 because they are reassigned when the maze file is read
         a = list(reversed(AStar(0, 0).solve((start_y, start_x), (end_y, end_x))[0]))
 
@@ -298,8 +302,6 @@ class LargeEnemy(Enemy):
     def __init__(self, x, y, is_host):
         super().__init__(x, y, "large", is_host)
         self.l_enemy_pos = []
-        self.__prev_cell = []
-        self.__cur_cell = []
         self.spawned_enemies = []
         self.bezier_points = []
 
@@ -411,7 +413,7 @@ class MeleeSwing(pygame.Surface):
 
 
 class Bullet(pygame.Rect):
-    def __init__(self, origin_x, origin_y, target_x, target_y, weapon):
+    def __init__(self, origin_x: int, origin_y: int, target_x: int, target_y: int, weapon: dict):
         super().__init__(origin_x, origin_y, weapon["proj_size"], weapon["proj_size"])
         self.x = origin_x
         self.y = origin_y
@@ -504,7 +506,11 @@ class Bezier:
     control_points: list
     num_of_points: int
 
-    def get_points(self):
+    def get_points(self) -> list:
+        """
+        Uses B to get all (x, y) coords of the points
+        :return: List of all coords
+        """
         control_x, control_y = zip(*self.control_points)
         return [
             (
@@ -522,6 +528,32 @@ class Bezier:
             B(i, j) = B(i, j - 1) * (1 - t) + B(i + 1, j - 1) * t
         """
         return arr[i] if j == 0 else self.__B(arr, i, j - 1, t) * (1 - t) + self.__B(arr, i + 1, j - 1, t) * t
+
+    def get_points_c(self) -> list:
+        """
+        C implementation of De Casteljau's algorithm
+        :return: List of all (x, y) coords
+        """
+        bezier = CDLL("data/bezier.dll")
+
+        cx, cy = zip(*self.control_points)
+        cx = [int(i) for i in cx]
+        cy = [int(i) for i in cy]
+
+        bezier.get_x.argtypes = [POINTER(c_int), c_int]
+        bezier.get_y.argtypes = [POINTER(c_int), c_int]
+
+        x_arr_point = (c_int * len(cx))(*cx)
+        y_arr_point = (c_int * len(cy))(*cy)
+
+        bezier.get_x.restype = ndpointer(dtype=c_double, shape=(self.num_of_points,))
+        bezier.get_y.restype = ndpointer(dtype=c_double, shape=(self.num_of_points,))
+
+        n = len(cx)
+        x = list(bezier.get_x(x_arr_point, n).astype(int))
+        y = list(bezier.get_y(y_arr_point, n).astype(int))
+
+        return list(zip(x, y))
 
 
 if __name__ == '__main__':

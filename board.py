@@ -16,12 +16,11 @@ class Wall(pygame.Rect):
 
 
 class Cell(pygame.Rect):
-    def __init__(self, x: int, y: int, open_: int):
+    def __init__(self, x: int, y: int):
         w, h = CELL_WIDTH, CELL_HEIGHT
         super().__init__(x, y, w, h)
         self.x = x
         self.y = y
-        self.open_ = open_
 
 
 class Door(pygame.Rect):
@@ -46,16 +45,7 @@ class Board(pygame.Surface):
         self.y = 0
         cell_num = self.__grid[1].count("X")
         # All cell positions
-        # self.cell_pos = [[Cell(380 * j + (20 * (j + 1)), 380 * i + (20 * (i + 1)), 1) for j in range(cell_num)]
-        #                  for i in range(cell_num)]
-        # self.hori_wall_pos = [[Wall(400 * j + 20, 400 * i, 1, 2) for j in range(cell_num)] for i in range(cell_num)]
-        # self.vert_wall_pos = [[Wall(400 * j, 400 * i + 20, 1, 1) for j in range(cell_num)] for i in range(cell_num)]
-        # self.hori_door_pos = [[Door(400 * (j // 2) + randint(50, 200), 400 * (i // 2), 0 if self.__grid[i][j + 1] == "-" else 1, 2)
-        #                        for j in range(0, len(self.__grid) - 1, 2)] for i in range(0, len(self.__grid), 2)]
-        # self.vert_door_pos = [[Door(400 * (j // 2), 400 * (i // 2) + randint(50, 200), 0 if self.__grid[i][j - 1] == "|" else 1, 1)
-        #                       for j in range(1, len(self.__grid) + 1, 2)] for i in range(1, len(self.__grid), 2)]
-
-        self.cell_pos = [[Cell(CELL_WIDTH * j + (WALL_VERTICAL_WIDTH * (j + 1)), CELL_HEIGHT * i + (WALL_HORIZONTAL_HEIGHT * (i + 1)), 1) for j in range(cell_num)]
+        self.cell_pos = [[Cell(CELL_WIDTH * j + (WALL_VERTICAL_WIDTH * (j + 1)), CELL_HEIGHT * i + (WALL_HORIZONTAL_HEIGHT * (i + 1))) for j in range(cell_num)]
                          for i in range(cell_num)]
         # All horizontal walls
         self.hori_wall_pos = [[Wall(WALL_HORIZONTAL_WIDTH * j + WALL_VERTICAL_WIDTH, WALL_VERTICAL_HEIGHT * i, 1, 2) for j in range(cell_num)] for i in range(cell_num + 1)]

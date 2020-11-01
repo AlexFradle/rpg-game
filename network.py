@@ -16,7 +16,30 @@ class GameServer:
         self.players = [self.host_game.player_name]
         self.previous_packet = {}
 
-    def get_init_packet(self):
+    def get_init_packet(self) -> dict:
+        """
+        Gets the initial packet to send to the client
+        dict structure:
+        {
+            'enemies': {
+                id: {'pos': (x, y), 'size': size, 'health': health},
+                ...
+            },
+            'players': {
+                name: {'pos': (x, y), 'num': num},
+                ...
+            },
+            'bullets': {
+                name: {
+                    id: {'pos': (x, y), 'colour': colour, 'size': size, 'damage': damage, 'from_enemy': from_enemy},
+                    ...
+                },
+                ...
+            },
+            'maze': [['/', '-', '/', '-', '/', ...], ...]
+        }
+        :return: dict with all data
+        """
         return {
             "enemies": {
                 k: {"pos": v.get_normalised_pos(self.host_game.board), "size": v.size, "health": v.health}
@@ -39,22 +62,45 @@ class GameServer:
             "maze": self.host_game.board.grid
         }
 
-    def get_synced_data(self, new_data):
+    def get_synced_data(self, new_data: dict) -> dict:
+        """
+        Synchronises the data from the client with the host game data
+        dict structure:
+        {
+            'enemies': {
+                id: {'pos': (x, y), 'size': size, 'health': health},
+                ...
+            },
+            'players': {
+                name: {'pos': (x, y), 'num': num},
+                ...
+            },
+            'bullets': {
+                name: {
+                    id: {'pos': (x, y), 'colour': colour, 'size': size, 'damage': damage, 'from_enemy': from_enemy},
+                    ...
+                },
+                ...
+            }
+        }
+        :param new_data: Data from the client
+        :return: Combined data of client and host
+        """
         synced = {
             "enemies": {
                 k: {
                     "pos": e.get_normalised_pos(self.host_game.board),
                     "size": e.size,
-                    "health": e.health if k not in new_data["enemies"] else e.health - new_data["enemies"][k]["health_changed"]
+                    "health": e.health - new_data["enemies"].get(str(k), {"health_changed": 0}).get("health_changed")
                 }
-                for k, e in self.host_game.enemies.items()
+                for k, e in self.host_game.enemies.items() if new_data["enemies"].get(str(k), {"health": e.health}).get("health") > 0
             },
             "players": {
                 p.name: {
                     "pos": (p.x, p.y) if p.name != new_data["player"]["name"] else (new_data["player"]["pos"][0], new_data["player"]["pos"][1]),
                     "num": self.players.index(p.name) + 1
                 }
-                for p in [self.host_game.player] + list(self.host_game.other_players.values())
+                for p in [self.host_game.player.get_normalised_pos(self.host_game.board, 2)] + list(self.host_game.other_players.values())
             },
             "bullets": {
                 n: {
@@ -67,15 +113,28 @@ class GameServer:
         synced["bullets"][new_data["player"]["name"]] = new_data["bullets"][new_data["player"]["name"]]
         return synced
 
-    def update_game_data(self, new_data):
+    def update_game_data(self, new_data: dict) -> None:
+        """
+        Updates the host game with the new data
+        :param new_data: Synchronised data between host and client
+        :return: None
+        """
+        # Changes current enemy health to new enemy health
         for k in new_data["enemies"]:
             self.host_game.enemies[k].health = new_data["enemies"][k]["health"]
 
+        # Deletes enemies that have been killed on a client game
+        for k in list(self.host_game.enemies):
+            if k not in new_data["enemies"]:
+                del self.host_game.enemies[k]
+
+        # Updates other player positions
         for k in new_data["players"]:
             if k != self.host_game.player_name:
-                self.host_game.other_players[k].x = new_data["players"][k]["pos"][0] + self.host_game.board.x
-                self.host_game.other_players[k].y = new_data["players"][k]["pos"][1] + self.host_game.board.y
+                self.host_game.other_players[k].x = new_data["players"][k]["pos"][0]
+                self.host_game.other_players[k].y = new_data["players"][k]["pos"][1]
 
+        # Updates bullets fired by clients to the host game or creates new ones
         for n in new_data["bullets"]:
             if n != self.host_game.player_name and n in self.host_game.bullets:
                 for k in new_data["bullets"][n]:
@@ -105,6 +164,7 @@ class GameServer:
                     for a, b in new_data["bullets"][n].items()
                 }
 
+        # Deletes bullets that have been deleted on the clients game
         for n in new_data["bullets"]:
             if n != self.host_game.player_name:
                 for k in list(self.host_game.bullets[n]):
@@ -128,7 +188,7 @@ class GameServer:
 
     def listen_to_client(self, clnt: socket.socket, addr: tuple) -> bool:
         """
-        Constantly running to listen for messages
+        Constantly running to listen for data from clients
         :param clnt: Client to listen for
         :param addr: Address of the client
         :return: ??
@@ -174,7 +234,25 @@ class GameClient:
         self.init_packet = {}
         self.previous_packet = {}
 
-    def load_json(self):
+    def load_json(self) -> dict:
+        """
+        Loads all client game data into dict to send
+        dict structure:
+        {
+            'player': {'name': name, 'pos': (x, y)},
+            'enemies': {
+                id: {'health': health, 'health_changed': health_changed},
+                ...
+            },
+            'bullets': {
+                name: {
+                    id: {'pos': (x, y), 'colour': colour, 'size': size, 'damage': damage, 'from_enemy': from_enemy},
+                    ...
+                }
+            }
+        }
+        :return: dict to send to the host
+        """
         return {
             "player": {
                 "name": self.client_game.player_name,
@@ -183,7 +261,8 @@ class GameClient:
             "enemies": {
                 k: {
                     "health": e.health,
-                    "health_changed": 0 if not self.previous_packet or self.previous_packet["enemies"].get(k) is None else self.previous_packet["enemies"][k]["health"] - e.health
+                    "health_changed": 0 if not self.previous_packet or self.previous_packet["enemies"].get(k) is None
+                    else self.previous_packet["enemies"][k]["health"] - e.health
                 } for k, e in self.client_game.enemies.items()
             },
             "bullets": {
@@ -199,8 +278,13 @@ class GameClient:
             }
         }
 
-    def update_game_data(self, new_data):
-        print(new_data["players"])
+    def update_game_data(self, new_data: dict) -> None:
+        """
+        Updates game data with new data from the host
+        :param new_data: dict containing all current data about the game
+        :return: None
+        """
+        # Updates enemy postions using the host enemy positions
         for k in new_data["enemies"]:
             if k in self.client_game.enemies:
                 self.client_game.enemies[k].x = new_data["enemies"][k]["pos"][0] + self.client_game.board.x
@@ -214,11 +298,17 @@ class GameClient:
                     self.client_game.is_host
                 )
 
+        # Deletes enemies that are dead on the host game
+        for k in self.client_game.enemies:
+            if k not in new_data["enemies"]:
+                del self.client_game.enemies[k]
+
+        # Updates other player positions or creates new teammates if the player just joined
         for k in new_data["players"]:
             if k != self.client_game.player_name:
                 if k in self.client_game.other_players:
-                    self.client_game.other_players[k].x = new_data["players"][k]["pos"][0] + self.client_game.board.x
-                    self.client_game.other_players[k].y = new_data["players"][k]["pos"][1] + self.client_game.board.y
+                    self.client_game.other_players[k].x = new_data["players"][k]["pos"][0]
+                    self.client_game.other_players[k].y = new_data["players"][k]["pos"][1]
                 else:
                     self.client_game.other_players[k] = Teammate(
                         new_data["players"][k]["pos"][0] - self.client_game.board.x,
@@ -227,6 +317,7 @@ class GameClient:
                         new_data["players"][k]["num"]
                     )
 
+        # Updates bullet positions fired by the host or other players
         for n in new_data["bullets"]:
             if n != self.client_game.player_name:
                 for k in new_data["bullets"][n]:
@@ -244,17 +335,26 @@ class GameClient:
                             cur_bullet["from_enemy"]
                         )
 
+        # Deletes bullets that have been deleted on the host game
         for n in new_data["bullets"]:
             if n != self.client_game.player_name:
                 for k in list(self.client_game.bullets[n]):
                     if k not in new_data["bullets"][n]:
                         del self.client_game.bullets[n][k]
 
-    def connect(self):
+    def connect(self) -> None:
+        """
+        Connects the client to the host and initalises game data
+        :return: None
+        """
+        # Connects the socket to the host
         self.sock.connect((self.host, self.port))
         self.send(json.dumps({"request": "CLIENT JOIN", "payload": {"player_name": self.client_game.player_name}}).encode())
+
+        # Receives init packet from the host
         self.init_packet = json.loads(self.sock.recv(BYTES_RECV).decode())
 
+        # Creates enemies dict using the data
         self.client_game.enemies = {
             k: Enemy(v["pos"][0], v["pos"][1], v["size"], self.client_game.is_host)
             for k, v in self.init_packet["enemies"].items()
@@ -263,18 +363,22 @@ class GameClient:
         for k, e in self.client_game.enemies.items():
             e.change_health_value(self.init_packet["enemies"][k]["health"])
 
+        # Creates correct maze
         self.client_game.grid = self.init_packet["maze"]
 
+        # Creates teammate objects using their positions and number
         self.client_game.other_players = {
             k: Teammate(v["pos"][0], v["pos"][1], k, v["num"])
             for k, v in self.init_packet["players"].items() if k != self.client_game.player_name
         }
 
+        # Creates player object using the correct number
         self.client_game.player = Player(
             self.client_game.player_name,
             sorted([self.init_packet["players"][i]["num"] for i in self.init_packet["players"]])[-1] + 1
         )
 
+        # Creates bullet dict
         self.client_game.bullets = {
             n: {
                 k: PseudoBullet(b["pos"][0], b["pos"][1], b["colour"], b["size"], b["damage"], b["from_enemy"])
@@ -283,38 +387,22 @@ class GameClient:
             for n, v in self.init_packet["bullets"].items()
         }
         self.client_game.bullets[self.client_game.player_name] = {}
+
+        # Starts listening to the host for data
         threading.Thread(target=self.listen, daemon=True).start()
 
-    def listen(self):
+    def listen(self) -> None:
+        """
+        Constantly listening to the host for new data
+        :return: None
+        """
         while True:
             try:
                 data = json.loads(self.sock.recv(BYTES_RECV).decode())
-                self.previous_packet = data
                 self.update_game_data(data)
+                self.previous_packet = data
             except:
                 pass
 
     def send(self, data):
         self.sock.sendall(data)
-
-
-server_to_client = {
-    "enemies": {
-        1: {"pos": (100, 100), "type": "large", "health": 45},
-        2: {}
-    },
-    "players": {
-        "name": {"pos": (200, 200), "num": 1}
-    },
-    "bullets": {
-        "name": {
-            1: {"pos": (50, 50), "colour": (255, 128, 0), "size": 10, "from_enemy": False}
-        }
-    }
-}
-
-client_to_server = {
-    "pos": (400, 500),
-    "enemies": {},
-    "bullets": {}
-}

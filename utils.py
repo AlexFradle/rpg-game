@@ -62,21 +62,13 @@ def colour_lerp(a: Union[tuple, list], b: Union[tuple, list], num_of_cols: int) 
             B is the end colour,
             C is the interpolated colour
 
-    :param a:
-    :param b:
-    :param num_of_cols:
-    :return:
+    :param a: Start colour
+    :param b: End colour
+    :param num_of_cols: Number of divisions to divide the line by
+    :return: current interpolated colour
     """
     for t in range(num_of_cols + 1):
         t /= num_of_cols
         c = (a[0] + (t * (b[0] - a[0])), a[1] + (t * (b[1] - a[1])), a[2] + (t * (b[2] - a[2])))
         yield c
 
-
-def get_teleport_position(tpa):
-    return {
-        0: (tpa.x + tpa.height, tpa.y),
-        90: (tpa.x, tpa.y - tpa.width),
-        180: (tpa.x - tpa.width, tpa.y),
-        270: (tpa.x, tpa.y + tpa.height)
-    }[tpa.angle]

@@ -8,48 +8,48 @@ from numpy.ctypeslib import ndpointer
 pygame.init()
 
 
-@dataclass
-class Bezier:
-    control_points: list
-    num_of_points: int
+# @dataclass
+# class Bezier:
+#     control_points: list
+#     num_of_points: int
+#
+#     def get_points(self):
+#         control_x, control_y = zip(*self.control_points)
+#         return [
+#             (
+#                 int(self.__B(control_x, 0, len(self.control_points) - 1, t / self.num_of_points)),
+#                 int(self.__B(control_y, 0, len(self.control_points) - 1, t / self.num_of_points))
+#             )
+#             for t in range(self.num_of_points + 1)
+#         ]
+#
+#     def __B(self, arr, i, j, t):
+#         """
+#         Using De Casteljau's algorithm:
+#         Gets the one dimensional value of the coords at the provided i value
+#         Recurrence relation:
+#             B(i, j) = B(i, j - 1) * (1 - t) + B(i + 1, j - 1) * t
+#         """
+#         return arr[i] if j == 0 else self.__B(arr, i, j - 1, t) * (1 - t) + self.__B(arr, i + 1, j - 1, t) * t
 
-    def get_points(self):
-        control_x, control_y = zip(*self.control_points)
-        return [
-            (
-                int(self.__B(control_x, 0, len(self.control_points) - 1, t / self.num_of_points)),
-                int(self.__B(control_y, 0, len(self.control_points) - 1, t / self.num_of_points))
-            )
-            for t in range(self.num_of_points + 1)
-        ]
 
-    def __B(self, arr, i, j, t):
-        """
-        Using De Casteljau's algorithm:
-        Gets the one dimensional value of the coords at the provided i value
-        Recurrence relation:
-            B(i, j) = B(i, j - 1) * (1 - t) + B(i + 1, j - 1) * t
-        """
-        return arr[i] if j == 0 else self.__B(arr, i, j - 1, t) * (1 - t) + self.__B(arr, i + 1, j - 1, t) * t
+def bezier_c(cx: list, cy: list, nop: int) -> list:
+    bezier = CDLL("bezier.dll")
 
+    bezier.get_x.argtypes = [POINTER(c_int), c_int]
+    bezier.get_y.argtypes = [POINTER(c_int), c_int]
 
-# def bezier_c(cx: list, cy: list, nop: int) -> tuple:
-#     bezier = CDLL("bezier.dll")
-#
-#     bezier.get_x.argtypes = [POINTER(c_int), c_int]
-#     bezier.get_y.argtypes = [POINTER(c_int), c_int]
-#
-#     x_arr_point = (c_int * len(cx))(*cx)
-#     y_arr_point = (c_int * len(cy))(*cy)
-#
-#     bezier.get_x.restype = ndpointer(dtype=c_double, shape=(nop,))
-#     bezier.get_y.restype = ndpointer(dtype=c_double, shape=(nop,))
-#
-#     n = len(cx)
-#     x = list(bezier.get_x(x_arr_point, n).astype(int))
-#     y = list(bezier.get_y(y_arr_point, n).astype(int))
-#
-#     return zip(x, y)
+    x_arr_point = (c_int * len(cx))(*cx)
+    y_arr_point = (c_int * len(cy))(*cy)
+
+    bezier.get_x.restype = ndpointer(dtype=c_double, shape=(nop,))
+    bezier.get_y.restype = ndpointer(dtype=c_double, shape=(nop,))
+
+    n = len(cx)
+    x = list(bezier.get_x(x_arr_point, n).astype(int))
+    y = list(bezier.get_y(y_arr_point, n).astype(int))
+
+    return list(zip(x, y))
 
 
 font = pygame.font.SysFont("courier", 15, True)
@@ -88,8 +88,8 @@ while running:
 
     if c_points:
         # b_points = Bezier([start] + c_points + [end], nop).get_points()
-        b_points = bezier_cy([start] + c_points + [end], nop)
-        # b_points = bezier_c(*list(zip(*([start] + c_points + [end]))), nop)
+        # b_points = bezier_cy([start] + c_points + [end], nop)
+        b_points = bezier_c(*list(zip(*([start] + c_points + [end]))), nop)
 
     if b_points:
         for b in b_points:
