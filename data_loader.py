@@ -14,11 +14,12 @@ class DataLoader:
     possible_items = json.load(open(ITEMS_PATH))
     loot_table = json.load(open(LOOT_TABLE_PATH))
     tree_root = ElementTree.parse(SKILL_TREE_PATH).getroot()
+    all_player_data = json.load(open(PLAYER_DATA_PATH))
     player_data = None
     __funcs = None
 
     def __init__(self):
-        if DataLoader.player_name not in json.load(open(PLAYER_DATA_PATH)):
+        if DataLoader.player_name not in DataLoader.all_player_data:
             self.create_new_player()
 
         DataLoader.player_data = json.load(open(PLAYER_DATA_PATH))[DataLoader.player_name]

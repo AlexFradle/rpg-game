@@ -1,10 +1,12 @@
 import pygame
-from ui import Hotbar, Inventory, Inspector, Equipment, Attributes, Tab, HealthBar, ManaBar, XPBar, SkillTree, ItemDropDisplay, Menu, SelectMenu
+from ui import Hotbar, Inventory, Inspector, Equipment, Attributes, Tab, HealthBar, ManaBar, XPBar, SkillTree, \
+    ItemDropDisplay, Menu, SelectMenu
 from board import Board
 from entities import Player, SmallEnemy, MediumEnemy, LargeEnemy, MeleeSwing, Bullet, Bezier, PseudoBullet
 from data_loader import DataLoader
 from maze_creator import MazeCreator
-from constants import PLAYER_NAME, WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH, BEZIER_POINT_COLOUR, GNS_IP, GNS_PORT
+from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH, BEZIER_POINT_COLOUR, GNS_IP, \
+    GNS_PORT, SELECT_MENU_WIDTH, MENU_WIDTH, MENU_HEIGHT, SELECT_MENU_HEIGHT, GAME_TITLE, TEXT_COLOUR
 from random import randint
 from utils import line_collide
 from items import ItemDrop
@@ -23,11 +25,6 @@ window = pygame.display.set_mode((width, height), pygame.HWSURFACE | pygame.DOUB
 clock = pygame.time.Clock()
 pygame.mouse.set_cursor(*pygame.cursors.broken_x)
 
-# Define player name here, this is then set as class attribute rather than instance
-# DataLoader then created to call __init__ to load the player data
-DataLoader.player_name = PLAYER_NAME
-_ = DataLoader()
-
 
 class Display(pygame.Surface):
     def __init__(self, w, h):
@@ -39,24 +36,13 @@ class Display(pygame.Surface):
         self.maze = MazeCreator(10, 10)
         self.maze.create((0, 0))
 
-        # Create all game surfaces
-        self.hotbar = Hotbar()
-        self.inv = Inventory()
-        self.inspector = Inspector()
-        self.tab = Tab()
-        self.equipment = Equipment()
-        self.attributes = Attributes()
-        self.xp_bar = XPBar()
-        self.item_drop_display = ItemDropDisplay()
-        self.st = SkillTree(width, height)
-
-        self.start_menu = Menu([
+        self.start_menu = Menu((WINDOW_WIDTH - (SELECT_MENU_WIDTH + MENU_WIDTH)) // 2, WINDOW_HEIGHT - MENU_HEIGHT, [
             ("Singleplayer", lambda: exec("start_single_game = True", globals())),
             ("Join Game", lambda: exec("join_multiplayer_pressed = True", globals())),
             ("Create Game", lambda: exec("start_multiplayer_game = True", globals())),
             ("Quit", lambda: exec("game_on = False", globals()))
         ])
-        self.pause_menu = Menu([
+        self.pause_menu = Menu(WINDOW_WIDTH // 2 - (MENU_WIDTH // 2), WINDOW_HEIGHT // 2 - (MENU_HEIGHT // 2), [
             ("Resume", lambda: exec("game.show_menu = False", globals())),
             ("Help", lambda: exec("")),
             ("Quit", lambda: exec(
@@ -69,14 +55,36 @@ class Display(pygame.Surface):
                 globals()
             ))
         ])
+        self.character_menu = SelectMenu(((WINDOW_WIDTH - (SELECT_MENU_WIDTH + MENU_WIDTH)) // 2) + MENU_WIDTH, WINDOW_HEIGHT - MENU_HEIGHT, [
+            (
+                (name, DataLoader.all_player_data[name]["class"], "lvl " + str(DataLoader.all_player_data[name]["level"])),
+                lambda a: exec(f"character_selected = '{a}';", globals())
+            ) for name in DataLoader.all_player_data
+        ])
 
 
 class Game:
-    def __init__(self, display, is_host, is_singleplayer, server_ip=None, server_port=None, host_address=None):
+    def __init__(self, display, is_host, is_singleplayer, name, server_ip=None, server_port=None, host_address=None):
+        # Define player name here, this is then set as class attribute rather than instance
+        # DataLoader then created to call __init__ to load the player data
+        DataLoader.player_name = name
+        _ = DataLoader()
         self.display = display
         self.is_host = is_host
         self.is_singleplayer = is_singleplayer
-        self.player_name = PLAYER_NAME if self.is_host else "player 2"
+        self.player_name = name
+
+        # Create all game surfaces
+        self.hotbar = Hotbar()
+        self.inv = Inventory()
+        self.inspector = Inspector()
+        self.tab = Tab()
+        self.equipment = Equipment()
+        self.attributes = Attributes()
+        self.xp_bar = XPBar()
+        self.item_drop_display = ItemDropDisplay()
+        self.st = SkillTree(display.width, display.height)
+
         # Create entities
         self.player = Player(self.player_name, 1)
         self.enemies = []
@@ -112,7 +120,7 @@ class Game:
             self.client.connect()
 
         # Make melee swing using correct player
-        self.melee_swing = MeleeSwing(self.player, display.hotbar[display.hotbar.selected_pos][1])
+        self.melee_swing = MeleeSwing(self.player, self.hotbar[self.hotbar.selected_pos][1])
 
         # Use new maze if host, else inherit the host maze
         self.board = Board() if self.is_host else Board(grid=self.grid)
@@ -278,13 +286,13 @@ class Game:
                     # Moves item from inv to hotbar
                     elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5] and not self.show_menu:
                         if self.show_inv:
-                            inv_collide_data = self.inv_collide(self.display.inv, *pygame.mouse.get_pos())
+                            inv_collide_data = self.inv_collide(self.inv, *pygame.mouse.get_pos())
                             if inv_collide_data is not None:
                                 pos, space = inv_collide_data
                                 DataLoader.change_file("remove_from_hotbar", self.num_pos[event.key] - 1)
                                 DataLoader.change_file("add_to_hotbar", space[0][1], self.num_pos[event.key] - 1)
                                 DataLoader.change_file("remove_from_inv", pos)
-                                DataLoader.change_file("add_to_inv", self.display.hotbar[self.num_pos[event.key] - 1][1], pos)
+                                DataLoader.change_file("add_to_inv", self.hotbar[self.num_pos[event.key] - 1][1], pos)
 
                     # Movement keys
                     elif event.key == pygame.K_d and not self.show_menu:
@@ -318,17 +326,17 @@ class Game:
                                     self.show_equipment = True if pos == 0 else False
 
                             # Changing attribute numbers
-                            for pos, signs in enumerate(self.display.attributes):
+                            for pos, signs in enumerate(self.attributes):
                                 plus, minus = signs
                                 p = pygame.Rect(
                                     plus.x,
-                                    (self.display.height // 2 - (self.display.attributes.height // 2)) + plus.y,
+                                    (self.display.height // 2 - (self.attributes.height // 2)) + plus.y,
                                     plus.w,
                                     plus.h
                                 )
                                 m = pygame.Rect(
                                     minus.x,
-                                    (self.display.height // 2 - (self.display.attributes.height // 2)) + minus.y,
+                                    (self.display.height // 2 - (self.attributes.height // 2)) + minus.y,
                                     minus.w,
                                     minus.h
                                 )
@@ -347,10 +355,10 @@ class Game:
                     # Switch armor for current selected using right mouse
                     elif event.button == 3:
                         if self.show_inv:
-                            inv_collide_data = self.inv_collide(self.display.inv, *pygame.mouse.get_pos())
+                            inv_collide_data = self.inv_collide(self.inv, *pygame.mouse.get_pos())
                             if inv_collide_data is not None:
                                 pos, space = inv_collide_data
-                                for i_pos, tup in enumerate(self.display.inv):
+                                for i_pos, tup in enumerate(self.inv):
                                     if tup[1] == space[1] and DataLoader.possible_items[tup[0][1]]["item_type"] == "armor":
                                         armor_type = DataLoader.possible_items[tup[0][1]]["armor_type"]
                                         DataLoader.change_file("remove_from_inv", i_pos)
@@ -359,9 +367,9 @@ class Game:
                                         DataLoader.change_file("add_to_armor", armor_type, tup[0][1])
 
                     elif event.button == 4:
-                        self.display.hotbar.change_selected(-1)
+                        self.hotbar.change_selected(-1)
                     elif event.button == 5:
-                        self.display.hotbar.change_selected(1)
+                        self.hotbar.change_selected(1)
 
             # Player movement
             if not self.show_inv and not self.show_menu:
@@ -418,7 +426,7 @@ class Game:
 
             # Mouse collision to provide the inspector with data
             if self.show_inv and not self.show_menu:
-                inv_collide_data = self.inv_collide(self.display.inv, *pygame.mouse.get_pos())
+                inv_collide_data = self.inv_collide(self.inv, *pygame.mouse.get_pos())
                 if inv_collide_data is not None:
                     pos, space = inv_collide_data
                     self.name = space[0][1]
@@ -431,7 +439,7 @@ class Game:
                     }
 
                 if self.show_equipment:
-                    eq_collide_data = self.eq_collide(self.display.equipment, *pygame.mouse.get_pos())
+                    eq_collide_data = self.eq_collide(self.equipment, *pygame.mouse.get_pos())
                     if eq_collide_data is not None:
                         pos, slot = eq_collide_data
                         self.name = slot[0][1]
@@ -443,7 +451,7 @@ class Game:
                             "st_pos": None
                         }
             if self.show_st and not self.show_menu:
-                st_collide_data = self.st_collide(self.display.st, *pygame.mouse.get_pos())
+                st_collide_data = self.st_collide(self.st, *pygame.mouse.get_pos())
                 if st_collide_data is not None:
                     skill, rect, img = st_collide_data
                     self.name = skill["elem"].tag
@@ -469,7 +477,7 @@ class Game:
                     if next_slot is not None:
                         DataLoader.change_file("remove_from_inv", next_slot)
                         DataLoader.change_file("add_to_inv", it_dr.item.name, next_slot)
-                        self.display.item_drop_display.add_item(
+                        self.item_drop_display.add_item(
                             (it_dr.item.name, pygame.image.load(MAIN_ASSET_PATH + it_dr.item.name + ".png"))
                         )
                         del self.item_drops[it_dr_pos]
@@ -477,7 +485,7 @@ class Game:
             if not self.show_menu:
                 for button, pressed in enumerate(pygame.mouse.get_pressed()):
                     if button == 0 and pressed == 1:
-                        cur_item = DataLoader.possible_items[self.display.hotbar[self.display.hotbar.selected_pos][1]]
+                        cur_item = DataLoader.possible_items[self.hotbar[self.hotbar.selected_pos][1]]
                         if not self.show_inv and not self.show_st:
                             if cur_item.get("melee_speed") is not None:
                                 speed = cur_item["melee_speed"]
@@ -503,7 +511,7 @@ class Game:
                                     pass
 
                 if self.melee_swing.swing and self.melee_swing.left > 0 and self.melee_swing.right > 0:
-                    damage = DataLoader.possible_items[self.display.hotbar[self.display.hotbar.selected_pos][1]]["damage"]
+                    damage = DataLoader.possible_items[self.hotbar[self.hotbar.selected_pos][1]]["damage"]
                     melee_swing_coords = self.melee_swing.get_coords()
                     for e in self.enemies.values():
                         enemy_lines = self.get_rect_corners(
@@ -616,8 +624,8 @@ class Game:
             self.display.blit(self.player, (self.player.x, self.player.y))
 
             # Draw melee swing to screen
-            if self.display.hotbar[self.display.hotbar.selected_pos][1] != self.melee_swing.item:
-                self.melee_swing = MeleeSwing(self.player, self.display.hotbar[self.display.hotbar.selected_pos][1])
+            if self.hotbar[self.hotbar.selected_pos][1] != self.melee_swing.item:
+                self.melee_swing = MeleeSwing(self.player, self.hotbar[self.hotbar.selected_pos][1])
             self.melee_swing.update()
             p_rect = pygame.Rect(
                 self.player.x + (self.player.width // 2),
@@ -634,9 +642,9 @@ class Game:
                 self.client.send(json.dumps({"request": "GET DATA", "payload": self.client.load_json()}).encode())
 
             # Update hotbar surface and draw to screen
-            self.display.hotbar.update()
+            self.hotbar.update()
             self.display.blit(
-                self.display.hotbar, (self.display.width // 3, self.display.height - self.display.hotbar.height)
+                self.hotbar, (self.display.width // 3, self.display.height - self.hotbar.height)
             )
 
             # Update health bar surface and draw to screen
@@ -645,7 +653,7 @@ class Game:
                 healthbar,
                 (
                     self.display.width // 20,
-                    self.display.height - (self.display.hotbar.height - self.display.hotbar.height // 4)
+                    self.display.height - (self.hotbar.height - self.hotbar.height // 4)
                 )
             )
 
@@ -655,94 +663,94 @@ class Game:
                 manabar,
                 (
                     (self.display.width // 20) * 15,
-                    self.display.height - (self.display.hotbar.height - self.display.hotbar.height // 4)
+                    self.display.height - (self.hotbar.height - self.hotbar.height // 4)
                 )
             )
 
             # Update item drop display and draw to screen
-            self.display.item_drop_display.update(self.font)
+            self.item_drop_display.update(self.font)
             self.display.blit(
-                self.display.item_drop_display,
+                self.item_drop_display,
                 (
-                    self.display.width - self.display.item_drop_display.width,
-                    self.display.height // 2 - (self.display.item_drop_display.height // 1.5)
+                    self.display.width - self.item_drop_display.width,
+                    self.display.height // 2 - (self.item_drop_display.height // 1.5)
                 )
             )
 
             # Update inventory surface and draw to screen
             if self.show_inv:
-                self.display.inv.update(self.data)
+                self.inv.update(self.data)
                 self.display.blit(
-                    self.display.inv,
+                    self.inv,
                     (
-                        self.display.width // 2 - (self.display.inv.width // 2),
-                        self.display.height // 2 - (self.display.inv.height // 2)
+                        self.display.width // 2 - (self.inv.width // 2),
+                        self.display.height // 2 - (self.inv.height // 2)
                     )
                 )
 
             # Update inspector if inventory or skill tree is open
             if self.show_inv or self.show_st:
-                self.display.inspector.update(self.name, self.font, self.data)
+                self.inspector.update(self.name, self.font, self.data)
                 self.display.blit(
-                    self.display.inspector,
+                    self.inspector,
                     (
-                        self.display.width - self.display.inspector.width,
-                        self.display.height // 2 - (self.display.inspector.height // 2)
+                        self.display.width - self.inspector.width,
+                        self.display.height // 2 - (self.inspector.height // 2)
                     )
                 )
 
             # Update equipment if inventory is open and equipment is selected
             if self.show_inv and self.show_equipment:
-                self.display.equipment.update(self.font, self.data)
+                self.equipment.update(self.font, self.data)
                 self.display.blit(
-                    self.display.equipment,
+                    self.equipment,
                     (
                         0,
-                        self.display.height // 2 - (self.display.equipment.height // 2)
+                        self.display.height // 2 - (self.equipment.height // 2)
                     )
                 )
 
             # Update attributes if inventory is open and attributes is selected
             if self.show_inv and not self.show_equipment:
-                self.display.attributes.update(self.font)
+                self.attributes.update(self.font)
                 self.display.blit(
-                    self.display.attributes,
+                    self.attributes,
                     (
                         0,
-                        self.display.height // 2 - (self.display.attributes.height // 2)
+                        self.display.height // 2 - (self.attributes.height // 2)
                     )
                 )
 
             # Update tab if inventory is open
             if self.show_inv:
-                self.display.tab.update(self.font)
+                self.tab.update(self.font)
                 self.display.blit(
-                    self.display.tab,
+                    self.tab,
                     (
                         0,
-                        self.display.height // 2 - (self.display.attributes.height // 2)
+                        self.display.height // 2 - (self.attributes.height // 2)
                     )
                 )
 
             # Update XP bar if inventory is open
             if self.show_inv:
-                self.display.xp_bar.update(self.font)
+                self.xp_bar.update(self.font)
                 self.display.blit(
-                    self.display.xp_bar,
+                    self.xp_bar,
                     (
-                        self.display.width // 2 - (self.display.inv.width // 2),
-                        self.display.height // 2 - (self.display.inv.height // 2) - self.display.xp_bar.height
+                        self.display.width // 2 - (self.inv.width // 2),
+                        self.display.height // 2 - (self.inv.height // 2) - self.xp_bar.height
                     )
                 )
 
             # Update skill tree surface
             if self.show_st:
-                self.display.st.update(self.font, self.data)
+                self.st.update(self.font, self.data)
                 self.display.blit(
-                    self.display.st,
+                    self.st,
                     (
                         0,
-                        self.display.height // 2 - (self.display.st.height // 2)
+                        self.display.height // 2 - (self.st.height // 2)
                     )
                 )
 
@@ -775,7 +783,7 @@ class Game:
 
 
 display = Display(width, height)
-game = Game(display, True, True)
+game = None
 multiplayer_game_menu = None
 game_on = True
 start_single_game = False
@@ -785,6 +793,11 @@ loaded_servers = False
 svr_addr = ""
 start_multiplayer_game = False
 join_multiplayer_game = False
+character_selected = None
+start_menu_font = pygame.font.SysFont("Courier", 15, True)
+title_font = pygame.font.SysFont("Courier", 50, True)
+title_text = title_font.render(GAME_TITLE, True, TEXT_COLOUR)
+title_size = title_font.size(GAME_TITLE)
 select_menu_font = pygame.font.SysFont("Courier", 20, True)
 while game_on:
     for event in pygame.event.get():
@@ -805,6 +818,7 @@ while game_on:
             if event.button == 1:
                 if start_screen:
                     display.start_menu.check_pressed(*pygame.mouse.get_pos())
+                    display.character_menu.check_pressed(*pygame.mouse.get_pos())
                 if join_multiplayer_pressed:
                     if multiplayer_game_menu is not None:
                         multiplayer_game_menu.check_pressed(*pygame.mouse.get_pos())
@@ -812,11 +826,14 @@ while game_on:
     window.fill((0, 0, 0))
 
     if start_screen:
-        display.start_menu.update(game.font, *pygame.mouse.get_pos())
+        display.start_menu.update(start_menu_font, *pygame.mouse.get_pos())
         window.blit(display.start_menu, (display.start_menu.x, display.start_menu.y))
+        display.character_menu.update(start_menu_font, *pygame.mouse.get_pos(), character_selected)
+        window.blit(display.character_menu, (display.character_menu.x, display.character_menu.y))
+        window.blit(title_text, ((WINDOW_WIDTH // 2) - (title_size[0] // 2), 0))
 
     if start_single_game:
-        game = Game(display, True, True)
+        game = Game(display, True, True, character_selected)
         window.blit(display, (0, 0))
         game.start()
 
@@ -833,7 +850,7 @@ while game_on:
                 "payload": {"name": "test game 1", "password": "test password", "address": f"{ipv4}:{port}"}
             }
             s.send(json.dumps(req).encode())
-            game = Game(display, True, False, server_ip=ipv4, server_port=port)
+            game = Game(display, True, False, character_selected, server_ip=ipv4, server_port=port)
             window.blit(display, (0, 0))
             game.start()
             req = {
@@ -847,7 +864,7 @@ while game_on:
             start_multiplayer_game = False
 
     if join_multiplayer_game:
-        game = Game(display, False, False, host_address=svr_addr)
+        game = Game(display, False, False, character_selected, host_address=svr_addr)
         window.blit(display, (0, 0))
         game.start()
 
@@ -861,7 +878,7 @@ while game_on:
                 data = json.loads(s.recv(2048).decode())
                 s.close()
                 if data:
-                    multiplayer_game_menu = SelectMenu([
+                    multiplayer_game_menu = SelectMenu(WINDOW_WIDTH // 2 - (SELECT_MENU_WIDTH // 2), WINDOW_HEIGHT // 2 - (SELECT_MENU_HEIGHT // 2), [
                         (
                             (i["name"], i["address"]),
                             lambda: exec(f"svr_addr = '{i['address']}'; join_multiplayer_pressed = False; join_multiplayer_game = True; loaded_servers = False", globals())

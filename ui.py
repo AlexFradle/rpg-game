@@ -768,10 +768,10 @@ class ItemDropDisplay(pygame.Surface):
 
 
 class Menu(pygame.Surface):
-    def __init__(self, buttons):
+    def __init__(self, x, y, buttons):
         super().__init__((MENU_WIDTH, MENU_HEIGHT), pygame.SRCALPHA)
-        self.__x = WINDOW_WIDTH // 2 - (MENU_WIDTH // 2)
-        self.__y = WINDOW_HEIGHT // 2 - (MENU_HEIGHT // 2)
+        self.__x = x
+        self.__y = y
         self.__width = MENU_WIDTH
         self.__height = MENU_HEIGHT
         self.__buttons = buttons
@@ -814,10 +814,10 @@ class Menu(pygame.Surface):
 
 
 class SelectMenu(pygame.Surface):
-    def __init__(self, buttons):
+    def __init__(self, x, y, buttons):
         super().__init__((SELECT_MENU_WIDTH, SELECT_MENU_HEIGHT), pygame.SRCALPHA)
-        self.__x = WINDOW_WIDTH // 2 - (SELECT_MENU_WIDTH // 2)
-        self.__y = WINDOW_HEIGHT // 2 - (SELECT_MENU_HEIGHT // 2)
+        self.__x = x
+        self.__y = y
         self.__width = SELECT_MENU_WIDTH
         self.__height = SELECT_MENU_HEIGHT
         n = 5
@@ -855,11 +855,14 @@ class SelectMenu(pygame.Surface):
         for b, bp in zip(self.__buttons[self.__current_page], self.__button_pos):
             if pygame.Rect(bp.x + self.__x, bp.y + self.__y, bp.w, bp.h).collidepoint(mx, my):
                 if flag == 1:
-                    b[1]()
+                    if len(b[0]) > 2:
+                        b[1](b[0][0])
+                    else:
+                        b[1]()
                 else:
                     return bp
 
-    def update(self, font, mx, my):
+    def update(self, font, mx, my, chr_sel=None):
         self.fill(SELECT_MENU_BACKGROUND_COLOUR)
         focused_rect = self.check_pressed(mx, my, 2)
         pygame.draw.rect(self, SELECT_MENU_BUTTON_COLOUR, self.__left_button)
@@ -870,6 +873,9 @@ class SelectMenu(pygame.Surface):
         self.blit(right_arrow, (self.__right_button.x, self.__right_button.y))
         for b, bp in zip(self.__buttons[self.__current_page], self.__button_pos):
             pygame.draw.rect(self, SELECT_MENU_BUTTON_COLOUR, bp)
+            if chr_sel is not None:
+                if chr_sel == b[0][0]:
+                    pygame.draw.rect(self, SELECT_MENU_CHARACTER_SELECTED, bp, 4)
             if bp == focused_rect:
                 pygame.draw.rect(self, SELECT_MENU_SELECTED, bp, 4)
             main_txt = font.render(b[0][0], True, TEXT_COLOUR)
