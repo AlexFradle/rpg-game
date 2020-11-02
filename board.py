@@ -80,7 +80,12 @@ class Board(pygame.Surface):
         with open(fn) as f:
             return [i.replace("\n", "") for i in f.readlines()]
 
-    def door_collide(self, player):
+    def door_collide(self, player) -> str:
+        """
+        Checks if the player will collide with or is colliding with a door
+        :param player: Player object
+        :return:
+        """
         player_rect = pygame.Rect((player.x + (player.width // 2)) - self.x, (player.y + (player.height // 2)) - self.y, player.width, player.height)
         for row in self.vert_door_pos:
             for door in row:

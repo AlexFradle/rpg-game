@@ -16,6 +16,7 @@ import socket
 import json
 import subprocess
 import threading
+from typing import Union
 pygame.init()
 
 environ["SDL_VIDEO_CENTERED"] = "1"
@@ -27,7 +28,7 @@ pygame.mouse.set_cursor(*pygame.cursors.broken_x)
 
 
 class Display(pygame.Surface):
-    def __init__(self, w, h):
+    def __init__(self, w: int, h: int) -> None:
         super().__init__((w, h), pygame.SRCALPHA)
         self.width = w
         self.height = h
@@ -64,7 +65,10 @@ class Display(pygame.Surface):
 
 
 class Game:
-    def __init__(self, display, is_host, is_singleplayer, name, server_ip=None, server_port=None, host_address=None):
+    def __init__(
+            self, display: Display, is_host: bool, is_singleplayer: bool, name: str, server_ip: str=None,
+            server_port: int=None, host_address: str=None
+    ) -> None:
         # Define player name here, this is then set as class attribute rather than instance
         # DataLoader then created to call __init__ to load the player data
         DataLoader.player_name = name
@@ -83,7 +87,7 @@ class Game:
         self.attributes = Attributes()
         self.xp_bar = XPBar()
         self.item_drop_display = ItemDropDisplay()
-        self.st = SkillTree(display.width, display.height)
+        self.st = SkillTree()
 
         # Create entities
         self.player = Player(self.player_name, 1)
@@ -169,7 +173,7 @@ class Game:
                 return space
 
     @staticmethod
-    def bullet_collide(b, board: Board, player, enemies: dict) -> bool:
+    def bullet_collide(b: Union[Bullet, PseudoBullet], board: Board, player, enemies: dict) -> bool:
         """
         Checks if the bullet has collided with any surfaces
         :param b: Bullet object to check collision with
@@ -244,7 +248,11 @@ class Game:
             item_drops.append(ItemDrop(*drop_data))
             return item_drops
 
-    def start(self):
+    def start(self) -> None:
+        """
+        Starts the main game loop
+        :return: None
+        """
         healthbar = HealthBar(self.player.health)
         manabar = ManaBar(self.player.mana)
         go_right, go_left, go_up, go_down, = False, False, False, False
@@ -276,7 +284,7 @@ class Game:
                     # Switches tabs
                     elif event.key == pygame.K_i and not self.show_menu:
                         self.show_equipment = not self.show_equipment
-                        self.display.tab.selected_equipment = not self.display.tab.selected_equipment
+                        self.tab.selected_equipment = not self.tab.selected_equipment
 
                     # Toggles skill tree
                     elif event.key == pygame.K_k and not self.show_menu:
@@ -319,10 +327,10 @@ class Game:
                         if self.show_inv:
                             mx, my = pygame.mouse.get_pos()
                             # Changing attribute tab
-                            for pos, sect in enumerate(self.display.tab):
-                                rect = pygame.Rect(sect.x, self.display.tab.height * 2 + sect.y, sect.w, sect.h)
+                            for pos, sect in enumerate(self.tab):
+                                rect = pygame.Rect(sect.x, self.tab.height * 2 + sect.y, sect.w, sect.h)
                                 if rect.collidepoint(mx, my):
-                                    self.display.tab.selected_equipment = True if pos == 0 else False
+                                    self.tab.selected_equipment = True if pos == 0 else False
                                     self.show_equipment = True if pos == 0 else False
 
                             # Changing attribute numbers
@@ -548,14 +556,17 @@ class Game:
             # Update enemies
             if not self.show_menu or not self.is_singleplayer:
                 for enemy in list(self.enemies.values()):
+                    # Get all large enemy coords
                     l_enemy_pos = [(i.x, i.y) for i in self.enemies.values() if isinstance(i, LargeEnemy)]
 
+                    # Check collision between the enemies and the board if host
                     if self.is_host:
                         r, c = self.board.cell_collide(enemy)
                         puz_x, puz_y = self.display.maze.cell_table[c, r]
                     else:
                         puz_x, puz_y = None, None
 
+                    # Append to the enemies list all new small enemies that the large enemies have spawned
                     if isinstance(enemy, LargeEnemy):
                         enemy.l_enemy_pos = l_enemy_pos
                         for se in enemy.spawned_enemies:
@@ -563,16 +574,20 @@ class Game:
                             self.next_enemy_index += 1
                         enemy.spawned_enemies = []
 
+                        # Position of all small enemies
                         sml_enemies = [
                             (i.x + i.width - self.board.x, i.y + i.height - self.board.y)
                             for i in self.enemies.values() if isinstance(i, SmallEnemy) and i.origin == 1
                         ]
+
+                        # Get bezier points using the first 4 small enemies as control points
                         enemy.bezier_points = Bezier(
                             [(enemy.x + enemy.width - self.board.x, enemy.y + enemy.height - self.board.y)] +
                             sml_enemies[:len(sml_enemies) if len(sml_enemies) < 4 else 4] +
                             [(self.player.x + self.player.width - self.board.x, self.player.y + self.player.height - self.board.y)], 1000
                         ).get_points_c()
 
+                        # Draw bezier points if there are any
                         if enemy.bezier_points:
                             for point in enemy.bezier_points:
                                 pygame.draw.circle(self.board, BEZIER_POINT_COLOUR, point, 2)
@@ -581,6 +596,7 @@ class Game:
                         self.player, (puz_x, puz_y), (player_puz_x, player_puz_y), self.display.maze.cell_table, self.board
                     )
 
+                    # Adds bullets to the bullets list
                     if isinstance(enemy, MediumEnemy):
                         for b in enemy.bullets:
                             # Uses player name to add bullets to because only the host can spawn enemy bullets
@@ -592,16 +608,23 @@ class Game:
             if not self.show_menu or not self.is_singleplayer:
                 for name in self.bullets:
                     for bp, bullet in list(self.bullets[name].items()):
+                        # Checks for bullet collision
                         bullet_collided = self.bullet_collide(bullet, self.board, self.player, self.enemies)
+
+                        # if the bullet was created by the player, then it is a Bullet obj, else it will be PseudoBullet
                         if isinstance(bullet, Bullet):
+                            # Stop the bullet moving if it hit an obstacle
                             if bullet_collided:
                                 bullet.moving = False
+
+                            # if the bullet is still moving then update its position and draw, else delete it
                             if bullet.moving:
                                 bullet.update(delta_time_scalar)
                                 pygame.draw.rect(self.board, bullet.colour, bullet)
                             else:
                                 del self.bullets[name][bp]
                         else:
+                            # As the bullet isn't a Bullet obj, update the position with the new one sent by the server
                             pygame.draw.rect(self.board, bullet.colour, bullet)
                             if bullet_collided:
                                 del self.bullets[name][bp]
@@ -615,7 +638,7 @@ class Game:
             self.display.blit(self.board, (self.board.x, self.board.y))
 
             # Draw enemies to screen
-            for enemy in self.enemies.values():
+            for enemy in list(self.enemies.values()):
                 self.display.blit(enemy, (enemy.x, enemy.y))
 
             # Draw player to screen
@@ -833,68 +856,72 @@ while game_on:
         window.blit(title_text, ((WINDOW_WIDTH // 2) - (title_size[0] // 2), 0))
 
     if start_single_game:
-        game = Game(display, True, True, character_selected)
-        window.blit(display, (0, 0))
-        game.start()
-
-    if start_multiplayer_game:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((GNS_IP, GNS_PORT))
-            process = subprocess.run(["ipconfig"], stdout=subprocess.PIPE)
-            out = process.stdout.decode()
-            ipv4 = out[out.find("IPv4"):][out[out.find("IPv4"):].find("1"):out[out.find("IPv4"):].find("\r")]
-            port = randint(GNS_PORT + 1, 55000)
-            req = {
-                "request": "HOST ADD",
-                "payload": {"name": "test game 1", "password": "test password", "address": f"{ipv4}:{port}"}
-            }
-            s.send(json.dumps(req).encode())
-            game = Game(display, True, False, character_selected, server_ip=ipv4, server_port=port)
+        if character_selected is not None:
+            game = Game(display, True, True, character_selected)
             window.blit(display, (0, 0))
             game.start()
-            req = {
-                "request": "HOST REMOVE",
-                "payload": req["payload"]
-            }
-            s.send(json.dumps(req).encode())
-            s.close()
-        except ConnectionRefusedError:
-            print("GNS not on")
-            start_multiplayer_game = False
 
-    if join_multiplayer_game:
-        game = Game(display, False, False, character_selected, host_address=svr_addr)
-        window.blit(display, (0, 0))
-        game.start()
-
-    if join_multiplayer_pressed:
-        if not loaded_servers:
+    if start_multiplayer_game:
+        if character_selected is not None:
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.connect((GNS_IP, GNS_PORT))
-                req = {"request": "GET ALL SERVERS", "payload": {}}
+                process = subprocess.run(["ipconfig"], stdout=subprocess.PIPE)
+                out = process.stdout.decode()
+                ipv4 = out[out.find("IPv4"):][out[out.find("IPv4"):].find("1"):out[out.find("IPv4"):].find("\r")]
+                port = randint(GNS_PORT + 1, 55000)
+                req = {
+                    "request": "HOST ADD",
+                    "payload": {"name": "test game 1", "password": "test password", "address": f"{ipv4}:{port}"}
+                }
                 s.send(json.dumps(req).encode())
-                data = json.loads(s.recv(2048).decode())
+                game = Game(display, True, False, character_selected, server_ip=ipv4, server_port=port)
+                window.blit(display, (0, 0))
+                game.start()
+                req = {
+                    "request": "HOST REMOVE",
+                    "payload": req["payload"]
+                }
+                s.send(json.dumps(req).encode())
                 s.close()
-                if data:
-                    multiplayer_game_menu = SelectMenu(WINDOW_WIDTH // 2 - (SELECT_MENU_WIDTH // 2), WINDOW_HEIGHT // 2 - (SELECT_MENU_HEIGHT // 2), [
-                        (
-                            (i["name"], i["address"]),
-                            lambda: exec(f"svr_addr = '{i['address']}'; join_multiplayer_pressed = False; join_multiplayer_game = True; loaded_servers = False", globals())
-                        ) for i in data
-                    ])
-                    loaded_servers = True
-                    start_screen = False
-                else:
-                    print("No servers on")
-                    join_multiplayer_pressed = False
             except ConnectionRefusedError:
                 print("GNS not on")
-                join_multiplayer_pressed = False
-        else:
-            window.blit(multiplayer_game_menu, (multiplayer_game_menu.x, multiplayer_game_menu.y))
-            multiplayer_game_menu.update(select_menu_font, *pygame.mouse.get_pos())
+                start_multiplayer_game = False
+
+    if join_multiplayer_game:
+        if character_selected is not None:
+            game = Game(display, False, False, character_selected, host_address=svr_addr)
+            window.blit(display, (0, 0))
+            game.start()
+
+    if join_multiplayer_pressed:
+        if character_selected is not None:
+            if not loaded_servers:
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect((GNS_IP, GNS_PORT))
+                    req = {"request": "GET ALL SERVERS", "payload": {}}
+                    s.send(json.dumps(req).encode())
+                    data = json.loads(s.recv(2048).decode())
+                    s.close()
+                    if data:
+                        multiplayer_game_menu = SelectMenu(WINDOW_WIDTH // 2 - (SELECT_MENU_WIDTH // 2), WINDOW_HEIGHT // 2 - (SELECT_MENU_HEIGHT // 2), [
+                            (
+                                (i["name"], i["address"]),
+                                lambda: exec(f"svr_addr = '{i['address']}'; join_multiplayer_pressed = False; join_multiplayer_game = True; loaded_servers = False", globals())
+                            ) for i in data
+                        ])
+                        loaded_servers = True
+                        start_screen = False
+                    else:
+                        print("No servers on")
+                        join_multiplayer_pressed = False
+                except ConnectionRefusedError:
+                    print("GNS not on")
+                    join_multiplayer_pressed = False
+            else:
+                window.blit(multiplayer_game_menu, (multiplayer_game_menu.x, multiplayer_game_menu.y))
+                multiplayer_game_menu.update(select_menu_font, *pygame.mouse.get_pos())
 
     pygame.display.update()
     clock.tick(30)

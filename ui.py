@@ -1,22 +1,14 @@
-########################################################################################################################
-# Project name:
-#
-#
-#
-#
-#
-########################################################################################################################
-
 import pygame
 from data_loader import DataLoader
 from itertools import chain
 from constants import *
 from xml.etree.ElementTree import Element
+from typing import Union
 
 
 class Hotbar(pygame.Surface):
     """Displays what the player has in their hotbar"""
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__((WINDOW_WIDTH // 3, WINDOW_HEIGHT // 10), pygame.SRCALPHA)
         self.__width = WINDOW_WIDTH // 3
         self.__height = WINDOW_HEIGHT // 10
@@ -37,7 +29,7 @@ class Hotbar(pygame.Surface):
         if key < len(self.__items):
             self.__items[key] = value
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> tuple:
         """
         Gets the item image and name at the given position
         :param item: The item to be gotten
@@ -58,7 +50,7 @@ class Hotbar(pygame.Surface):
         return self.__selected_pos
 
     @selected_pos.setter
-    def selected_pos(self, value: int):
+    def selected_pos(self, value: int) -> None:
         self.__selected_pos = value if isinstance(value, int) else self.__selected_pos
 
     def __get_items(self) -> list:
@@ -119,7 +111,7 @@ class Hotbar(pygame.Surface):
 
 class Inventory(pygame.Surface):
     """Displays the players current inventory"""
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__((WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2), pygame.SRCALPHA)
         self.__width = WINDOW_WIDTH // 2
         self.__height = WINDOW_HEIGHT // 2
@@ -141,7 +133,7 @@ class Inventory(pygame.Surface):
         if key < len(self.__items):
             self.__items[key] = value
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> tuple:
         """
         Gets the items in the spaces and the rect
         :param item: The item to be gotten
@@ -207,7 +199,7 @@ class Inventory(pygame.Surface):
 
 class Inspector(pygame.Surface):
     """Provides information about the selected item"""
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__((WINDOW_WIDTH // 5, WINDOW_HEIGHT // 1.5), pygame.SRCALPHA)
         self.__width = WINDOW_WIDTH // 5
         self.__height = WINDOW_HEIGHT // 1.5
@@ -220,7 +212,7 @@ class Inspector(pygame.Surface):
     def height(self):
         return self.__height
 
-    def update(self, name: str, font: pygame.font, data: dict) -> None:
+    def update(self, name: str, font: pygame.font.Font, data: dict) -> None:
         """
         Updates inspector surface each frame
         :param name: Name of the item being inspected
@@ -254,7 +246,7 @@ class Inspector(pygame.Surface):
 
 class Equipment(pygame.Surface):
     """Displays the players current equipment"""
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__((WINDOW_WIDTH // 5, WINDOW_HEIGHT // 1.5), pygame.SRCALPHA)
         self.__width = WINDOW_WIDTH // 5
         self.__height = WINDOW_HEIGHT // 1.5
@@ -292,7 +284,7 @@ class Equipment(pygame.Surface):
         """
         return list(DataLoader.player_data["armor"].values())
 
-    def update(self, font: pygame.font, data: dict) -> None:
+    def update(self, font: pygame.font.Font, data: dict) -> None:
         """
         Updates the Equipment surface
         :param font: Font to be used to render the text
@@ -337,7 +329,7 @@ class Equipment(pygame.Surface):
 
 class HealthBar(pygame.Surface):
     """Displays the players current health in bar form"""
-    def __init__(self, max_health: int):
+    def __init__(self, max_health: int) -> None:
         super().__init__((WINDOW_WIDTH // 5, WINDOW_HEIGHT // 20), pygame.SRCALPHA)
         self.__width = WINDOW_WIDTH // 5
         self.__height = WINDOW_HEIGHT // 20
@@ -351,7 +343,7 @@ class HealthBar(pygame.Surface):
     def height(self):
         return self.__height
 
-    def update(self, font: pygame.font, player_health: int) -> None:
+    def update(self, font: pygame.font.Font, player_health: int) -> None:
         """
         Updates health bar surface
         :param font: Font to be used to render the text
@@ -373,7 +365,7 @@ class HealthBar(pygame.Surface):
 
 class ManaBar(pygame.Surface):
     """Displays the players current mana in bar form"""
-    def __init__(self, max_mana: int):
+    def __init__(self, max_mana: int) -> None:
         super().__init__((WINDOW_WIDTH // 5, WINDOW_HEIGHT // 20), pygame.SRCALPHA)
         self.__width = WINDOW_WIDTH // 5
         self.__height = WINDOW_HEIGHT // 20
@@ -387,7 +379,7 @@ class ManaBar(pygame.Surface):
     def height(self):
         return self.__height
 
-    def update(self, font: pygame.font, player_mana: int) -> None:
+    def update(self, font: pygame.font.Font, player_mana: int) -> None:
         """
         Updates mana bar surface
         :param font: Font to be used to render the text
@@ -409,7 +401,7 @@ class ManaBar(pygame.Surface):
 
 class Attributes(pygame.Surface):
     """Displays the players current attributes"""
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__((WINDOW_WIDTH // 5, WINDOW_HEIGHT // 1.5), pygame.SRCALPHA)
         self.__width = WINDOW_WIDTH // 5
         self.__height = WINDOW_HEIGHT // 1.5
@@ -431,7 +423,7 @@ class Attributes(pygame.Surface):
     def height(self):
         return self.__height
 
-    def update(self, font: pygame.font) -> None:
+    def update(self, font: pygame.font.Font) -> None:
         """
         Updates the Attributes surface
         :param font: Font to be used to render the text
@@ -469,7 +461,7 @@ class Attributes(pygame.Surface):
 
 class Tab(pygame.Surface):
     """Tab to change between equipment and attributes menus"""
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__((WINDOW_WIDTH // 5, WINDOW_HEIGHT // 12), pygame.SRCALPHA)
         self.__width = WINDOW_WIDTH // 5
         self.__height = WINDOW_HEIGHT // 12
@@ -487,7 +479,7 @@ class Tab(pygame.Surface):
     def height(self):
         return self.__height
 
-    def update(self, font: pygame.font) -> None:
+    def update(self, font: pygame.font.Font) -> None:
         """
         Updates the Tab surface
         :param font: Font to be used to render the text
@@ -512,7 +504,7 @@ class Tab(pygame.Surface):
 
 class XPBar(pygame.Surface):
     """Displays the players current xp in a bar form"""
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__((WINDOW_WIDTH // 2, WINDOW_HEIGHT // 20), pygame.SRCALPHA)
         self.__width = WINDOW_WIDTH // 2
         self.__height = WINDOW_HEIGHT // 20
@@ -525,7 +517,7 @@ class XPBar(pygame.Surface):
     def height(self):
         return self.__height
 
-    def update(self, font: pygame.font) -> None:
+    def update(self, font: pygame.font.Font) -> None:
         """
         Updates the XPBar surface
         :param font: Font to be used to render the text
@@ -555,11 +547,11 @@ class XPBar(pygame.Surface):
 
 class SkillTree(pygame.Surface):
     """Displays skill tree"""
-    def __init__(self, window_width, window_height):
-        self.__width = window_width // 1.25
-        self.__height = window_height // 1.25
+    def __init__(self) -> None:
+        self.__width = WINDOW_WIDTH // 1.25
+        self.__height = WINDOW_HEIGHT // 1.25
         super().__init__((self.__width, self.__height), pygame.SRCALPHA)
-        img_dims = int((window_height / 720) * 50)
+        img_dims = int((WINDOW_HEIGHT / 720) * 50)
         self.__levels, self.__level_rects = self.__load_levels(DataLoader.tree_root, DataLoader.player_data["class"], img_dims)
         self.__imgs = [pygame.image.load(f"{MAIN_ASSET_PATH}{i['elem'].tag}.png") for i in self.__levels]
         self.__bw_imgs = [pygame.image.load(f"{MAIN_ASSET_PATH}{i['elem'].tag}_bw.png") for i in self.__levels]
@@ -665,7 +657,7 @@ class SkillTree(pygame.Surface):
 
         return coords
 
-    def update(self, font: pygame.font, data: dict) -> None:
+    def update(self, font: pygame.font.Font, data: dict) -> None:
         """
         Updates skill tree surface each frame
         :param font: Font to use to draw text
@@ -712,7 +704,7 @@ class SkillTree(pygame.Surface):
 
 class ItemDropDisplay(pygame.Surface):
     """Displays the item which was recently picked up by the player"""
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__((WINDOW_WIDTH // 2, WINDOW_HEIGHT // 1.5), pygame.SRCALPHA)
         self.__width = WINDOW_WIDTH // 2
         self.__height = WINDOW_HEIGHT // 2
@@ -734,7 +726,7 @@ class ItemDropDisplay(pygame.Surface):
         """
         self.__items.insert(0, item)
 
-    def update(self, font: pygame.font) -> None:
+    def update(self, font: pygame.font.Font) -> None:
         """
         Updates ItemDropDisplay surface each frame
         :param font: Font in which the text should be written in
@@ -768,7 +760,7 @@ class ItemDropDisplay(pygame.Surface):
 
 
 class Menu(pygame.Surface):
-    def __init__(self, x, y, buttons):
+    def __init__(self, x: int, y: int, buttons: list) -> None:
         super().__init__((MENU_WIDTH, MENU_HEIGHT), pygame.SRCALPHA)
         self.__x = x
         self.__y = y
@@ -793,28 +785,51 @@ class Menu(pygame.Surface):
     def y(self):
         return self.__y
 
-    def check_pressed(self, mx, my, flag=1):
-        for b, bp in zip(self.__buttons, self.__button_pos):
-            if pygame.Rect(bp.x + self.__x, bp.y + self.__y, bp.w, bp.h).collidepoint(mx, my):
+    def check_pressed(self, mx: int, my: int, flag: int=1) -> Union[None, pygame.Rect]:
+        """
+        Checks whether any of the buttons were pressed and either: execute the function or return the rect
+        :param mx: mouse x position
+        :param my: mouse y position
+        :param flag: determines whether the function is called(flag=1) or the rect is returned(flag=any int except 1)
+        :return: None or the button rect
+        """
+        for button, button_pos in zip(self.__buttons, self.__button_pos):
+            if pygame.Rect(button_pos.x + self.__x, button_pos.y + self.__y, button_pos.w, button_pos.h).collidepoint(mx, my):
+                # button is a tuple in the form (text, func)
                 if flag == 1:
-                    b[1]()
+                    button[1]()
                 else:
-                    return bp
+                    return button_pos
 
-    def update(self, font, mx, my):
+    def update(self, font: pygame.font.Font, mx: int, my: int) -> None:
+        """
+        Draws the buttons and corresponding text to the Menu surface
+        :param font: font to draw the text with
+        :param mx: mouse x position
+        :param my: mouse y position
+        :return: None
+        """
         self.fill(MENU_BACKGROUND_COLOUR)
+
+        # Check if any buttons are being hovered over
         focused_rect = self.check_pressed(mx, my, 2)
+
+        # Loop through buttons to draw them
         for b, bp in zip(self.__buttons, self.__button_pos):
             pygame.draw.rect(self, MENU_BUTTON_COLOUR, bp)
+
+            # Draw border around the hovered over button
             if bp == focused_rect:
                 pygame.draw.rect(self, MENU_SELECTED, bp, 4)
+
+            # Draw the name of the button
             txt = font.render(b[0], True, TEXT_COLOUR)
             txt_size = font.size(b[0])
             self.blit(txt, ((self.__width // 2) - (txt_size[0] // 2), bp.y + (bp.h // 2) - (txt_size[1] // 2)))
 
 
 class SelectMenu(pygame.Surface):
-    def __init__(self, x, y, buttons):
+    def __init__(self, x: int, y: int, buttons: list) -> None:
         super().__init__((SELECT_MENU_WIDTH, SELECT_MENU_HEIGHT), pygame.SRCALPHA)
         self.__x = x
         self.__y = y
@@ -848,43 +863,74 @@ class SelectMenu(pygame.Surface):
         return self.__current_page
 
     @current_page.setter
-    def current_page(self, value):
+    def current_page(self, value: int):
         self.__current_page = value if 0 <= value < len(self.__buttons) else self.__current_page
 
-    def check_pressed(self, mx, my, flag=1):
-        for b, bp in zip(self.__buttons[self.__current_page], self.__button_pos):
-            if pygame.Rect(bp.x + self.__x, bp.y + self.__y, bp.w, bp.h).collidepoint(mx, my):
+    def check_pressed(self, mx: int, my: int, flag: int=1) -> Union[None, pygame.Rect]:
+        """
+        Checks whether any of the buttons were pressed and either: execute the function or return the rect
+        :param mx: mouse x position
+        :param my: mouse y position
+        :param flag: determines whether the function is called(flag=1) or the rect is returned(flag=any int except 1)
+        :return: None or the button rect
+        """
+        for button, button_pos in zip(self.__buttons[self.__current_page], self.__button_pos):
+            if pygame.Rect(button_pos.x + self.__x, button_pos.y + self.__y, button_pos.w, button_pos.h).collidepoint(mx, my):
+                # button is a tuple in the form ((text, text), func) or ((text, text, text), func)
                 if flag == 1:
-                    if len(b[0]) > 2:
-                        b[1](b[0][0])
+                    if len(button[0]) > 2:
+                        button[1](button[0][0])
                     else:
-                        b[1]()
+                        button[1]()
                 else:
-                    return bp
+                    return button_pos
 
-    def update(self, font, mx, my, chr_sel=None):
+    def update(self, font: pygame.font.Font, mx: int, my: int, chr_sel: str=None) -> None:
+        """
+        Draws all buttons and their text
+        :param font: font to draw the text with
+        :param mx: mouse x position
+        :param my: mouse y position
+        :param chr_sel: name of the character selected, if one is selected
+        :return: None
+        """
         self.fill(SELECT_MENU_BACKGROUND_COLOUR)
+
+        # Check if any buttons are being hovered over
         focused_rect = self.check_pressed(mx, my, 2)
+
+        # Draw the left and right button rects
         pygame.draw.rect(self, SELECT_MENU_BUTTON_COLOUR, self.__left_button)
         pygame.draw.rect(self, SELECT_MENU_BUTTON_COLOUR, self.__right_button)
+
+        # Draw left and right button text
         left_arrow = font.render("<-", True, TEXT_COLOUR)
         right_arrow = font.render("->", True, TEXT_COLOUR)
         self.blit(left_arrow, (self.__left_button.x, self.__left_button.y))
         self.blit(right_arrow, (self.__right_button.x, self.__right_button.y))
-        for b, bp in zip(self.__buttons[self.__current_page], self.__button_pos):
-            pygame.draw.rect(self, SELECT_MENU_BUTTON_COLOUR, bp)
+
+        # Loop through buttons to draw them
+        for button, button_pos in zip(self.__buttons[self.__current_page], self.__button_pos):
+            # Draw button rect
+            pygame.draw.rect(self, SELECT_MENU_BUTTON_COLOUR, button_pos)
+
+            # if a character is selected, draw a selected border around the button
             if chr_sel is not None:
-                if chr_sel == b[0][0]:
-                    pygame.draw.rect(self, SELECT_MENU_CHARACTER_SELECTED, bp, 4)
-            if bp == focused_rect:
-                pygame.draw.rect(self, SELECT_MENU_SELECTED, bp, 4)
-            main_txt = font.render(b[0][0], True, TEXT_COLOUR)
-            second_txt = font.render(str(b[0][1]), True, TEXT_COLOUR)
-            self.blit(main_txt, (bp.x, bp.y))
-            self.blit(second_txt, (bp.x + bp.w - font.size(str(b[0][1]))[0], bp.y))
-            if len(b[0]) > 2:
-                third_txt = font.render(b[0][2], True, TEXT_COLOUR)
-                self.blit(third_txt, (bp.x, bp.y + bp.h - font.size(b[0][2])[1]))
+                if chr_sel == button[0][0]:
+                    pygame.draw.rect(self, SELECT_MENU_CHARACTER_SELECTED, button_pos, 4)
+
+            # Draw border around the hovered over button
+            if button_pos == focused_rect:
+                pygame.draw.rect(self, SELECT_MENU_SELECTED, button_pos, 4)
+
+            # Draw all text corresponding to the button
+            main_txt = font.render(button[0][0], True, TEXT_COLOUR)
+            second_txt = font.render(str(button[0][1]), True, TEXT_COLOUR)
+            self.blit(main_txt, (button_pos.x, button_pos.y))
+            self.blit(second_txt, (button_pos.x + button_pos.w - font.size(str(button[0][1]))[0], button_pos.y))
+            if len(button[0]) > 2:
+                third_txt = font.render(button[0][2], True, TEXT_COLOUR)
+                self.blit(third_txt, (button_pos.x, button_pos.y + button_pos.h - font.size(button[0][2])[1]))
 
 
 if __name__ == '__main__':

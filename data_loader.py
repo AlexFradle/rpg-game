@@ -18,7 +18,7 @@ class DataLoader:
     player_data = None
     __funcs = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         if DataLoader.player_name not in DataLoader.all_player_data:
             self.create_new_player()
 
@@ -27,7 +27,11 @@ class DataLoader:
         self.__resize_images()
 
     @staticmethod
-    def create_new_player():
+    def create_new_player() -> None:
+        """
+        Creates a new player character in the player_data.json file
+        :return: None
+        """
         with open(PLAYER_DATA_PATH) as f:
             file = json.load(f)
 
