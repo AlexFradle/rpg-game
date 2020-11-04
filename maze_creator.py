@@ -1,5 +1,6 @@
 import random
 from collections import ChainMap
+from data_loader import DataLoader
 
 
 class MazeCreator:
@@ -82,8 +83,7 @@ class MazeCreator:
                 walls.extend(self.get_adjacent_walls(cell))
             walls.remove(wall)
 
-        with open("data/maze.txt", "w") as f:
-            f.write("\n".join("".join(i) for i in self.grid))
+        DataLoader.store_maze("\n".join("".join(i) for i in self.grid))
 
 
 if __name__ == '__main__':

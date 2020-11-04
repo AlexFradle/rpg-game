@@ -91,7 +91,7 @@ class Game:
 
         # Create entities
         self.player = Player(self.player_name, 1)
-        self.enemies = []
+        self.enemies = {i: LargeEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190, self.is_host) for i in range(2)}
 
         # Misc Variables
         self.font = pygame.font.SysFont("Courier", 15, True)
@@ -100,11 +100,10 @@ class Game:
         self.show_equipment = True
         self.show_st = False
         self.show_menu = False
-        self.name = None
+        self.item_name = None
         self.data = None
         self.grid = None
         self.num_pos = {pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 3, pygame.K_4: 4, pygame.K_5: 5}
-        self.enemies = {i: LargeEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190, self.is_host) for i in range(2)}
         self.frames = 30
         self.item_drops = []
         self.bullets = {self.player_name: {}}
@@ -437,7 +436,7 @@ class Game:
                 inv_collide_data = self.inv_collide(self.inv, *pygame.mouse.get_pos())
                 if inv_collide_data is not None:
                     pos, space = inv_collide_data
-                    self.name = space[0][1]
+                    self.item_name = space[0][1]
                     self.data = {
                         "img": space[0][0],
                         "attr": DataLoader.possible_items[space[0][1]],
@@ -450,7 +449,7 @@ class Game:
                     eq_collide_data = self.eq_collide(self.equipment, *pygame.mouse.get_pos())
                     if eq_collide_data is not None:
                         pos, slot = eq_collide_data
-                        self.name = slot[0][1]
+                        self.item_name = slot[0][1]
                         self.data = {
                             "img": slot[0][0],
                             "attr": DataLoader.possible_items[slot[0][1]],
@@ -462,10 +461,10 @@ class Game:
                 st_collide_data = self.st_collide(self.st, *pygame.mouse.get_pos())
                 if st_collide_data is not None:
                     skill, rect, img = st_collide_data
-                    self.name = skill["elem"].tag
+                    self.item_name = skill["elem"].tag
                     self.data = {
                         "img": img,
-                        "attr": {**skill["elem"].attrib, "level": DataLoader.player_data["skills"].get(self.name)},
+                        "attr": {**skill["elem"].attrib, "level": DataLoader.player_data["skills"].get(self.item_name)},
                         "eq_pos": None,
                         "inv_pos": None,
                         "st_pos": rect
@@ -531,7 +530,6 @@ class Game:
                         ]
                         if any(hits):
                             e.health -= damage
-                            print(e.health)
 
             # Kill enemy if health < 1
             for ind, e in list(self.enemies.items()):
@@ -713,7 +711,7 @@ class Game:
 
             # Update inspector if inventory or skill tree is open
             if self.show_inv or self.show_st:
-                self.inspector.update(self.name, self.font, self.data)
+                self.inspector.update(self.item_name, self.font, self.data)
                 self.display.blit(
                     self.inspector,
                     (

@@ -27,6 +27,16 @@ class DataLoader:
         self.__resize_images()
 
     @staticmethod
+    def store_maze(maze: str) -> None:
+        """
+        Stores the maze created by maze_creator.py
+        :param maze: maze formatted from 2d list to str
+        :return: None
+        """
+        with open("data/maze.txt", "w") as f:
+            f.write(maze)
+
+    @staticmethod
     def create_new_player() -> None:
         """
         Creates a new player character in the player_data.json file
