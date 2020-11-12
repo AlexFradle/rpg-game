@@ -110,13 +110,14 @@ class AStar:
             path = []
             current = self.open_set[smallest]
             temp = current
-            path.append(temp)
-            while temp.previous:
-                path.append(temp.previous)
-                temp = temp.previous
 
             # If current vertex is the end vertex then finish
             if current == end:
+                path.append(temp)
+                while temp.previous:
+                    path.append(temp.previous)
+                    temp = temp.previous
+
                 return path, self.closed_set
 
             # Remove current vertex from open and add it to closed
