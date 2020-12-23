@@ -1,5 +1,5 @@
 import pygame
-from random import randint
+from random import randint, seed
 from constants import *
 pygame.init()
 
@@ -44,6 +44,7 @@ class Board(pygame.Surface):
         self.x = 0
         self.y = 0
         cell_num = self.__grid[1].count("X")
+        seed(RANDOM_SEED)
         # All cell positions
         self.cell_pos = [[Cell(CELL_WIDTH * j + (WALL_VERTICAL_WIDTH * (j + 1)), CELL_HEIGHT * i + (WALL_HORIZONTAL_HEIGHT * (i + 1))) for j in range(cell_num)]
                          for i in range(cell_num)]
@@ -115,8 +116,12 @@ class Board(pygame.Surface):
 
         return False
 
-    def cell_collide(self, entity):
-        entity_rect = pygame.Rect((entity.x + (entity.width // 2)) - self.x, (entity.y + (entity.height // 2)) - self.y, entity.width, entity.height)
+    def cell_collide(self, entity, is_normalised=False):
+        entity_rect = pygame.Rect(
+            (entity.x + (entity.width // 2)) - (self.x if not is_normalised else 0),
+            (entity.y + (entity.height // 2)) - (self.y if not is_normalised else 0),
+            entity.width, entity.height
+        )
         for r_pos, row in enumerate(self.cell_pos):
             for c_pos, cell in enumerate(row):
                 if entity_rect.colliderect(cell):

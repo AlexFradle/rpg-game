@@ -15,8 +15,8 @@
         ],
         "inventory": [
             "axe",
-            "axe",
-            "axe",
+            "lightning",
+            "lightning",
             "fire",
             "fire",
             "lightning",
@@ -36,18 +36,22 @@
             "health_potion"
         ],
         "attributes": {
-            "health": 9,
-            "mana": 4,
+            "health": 6,
+            "mana": 7,
             "strength": 8,
             "defense": 5
         },
         "skills": {
-            "resistance": 2,
-            "fireball": 1
+            "resistance": 3,
+            "fireball": 1,
+            "fire_hammer": 3,
+            "phoenix": 1,
+            "ember": 1,
+            "broken_heart": 1
         },
-        "level": 5,
-        "xp": 126,
-        "unused_sp": 0,
+        "level": 7,
+        "xp": 373,
+        "unused_sp": 11,
         "coins": 200,
         "class": "mage"
     },
@@ -95,7 +99,7 @@
         },
         "skills": {},
         "level": 1,
-        "xp": 0,
+        "xp": 81,
         "unused_sp": 0,
         "coins": 0,
         "class": "mage"
@@ -148,5 +152,54 @@
         "unused_sp": 0,
         "coins": 0,
         "class": "mage"
+    },
+    "test": {
+        "armor": {
+            "head": "basic_head",
+            "chest": "basic_chest",
+            "legs": "basic_legs",
+            "feet": "basic_feet"
+        },
+        "hotbar": [
+            "axe",
+            null,
+            null,
+            null,
+            null
+        ],
+        "inventory": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        ],
+        "attributes": {
+            "health": 1,
+            "mana": 1,
+            "strength": 1,
+            "defense": 1
+        },
+        "skills": {},
+        "level": 1,
+        "xp": 0,
+        "unused_sp": 0,
+        "coins": 0,
+        "class": "archer"
     }
 }

@@ -21,6 +21,7 @@ class Player(pygame.Surface):
         self.__height = ENTITY_INFO["player"][1]
         super().__init__((self.__width * 2, self.__height * 2), pygame.SRCALPHA)
         self.__img = pygame.image.load(f"assets/{WINDOW_WIDTH}x{WINDOW_HEIGHT}/player_{player_num}.png")
+        self.colour = self.__img.get_at((20, 20))[:3]
         self.x, self.y = 200, 200
         self.__max_health, self.__health = None, None
         self.__max_mana, self.__mana = None, None
@@ -29,7 +30,10 @@ class Player(pygame.Surface):
         self.mv_amount = PLAYER_MV_AMOUNT
         self.__damage_cooldown = 0
         self.name = name
-        self.__player_shell = namedtuple("player_shell", ["x", "y", "name"])
+        self.__player_shell = namedtuple("player_shell", ["x", "y", "name", "degrees"])
+        self.lives = PLAYER_LIVES
+        self.is_alive = True
+        self.degrees = 0
 
     @property
     def width(self):
@@ -51,7 +55,7 @@ class Player(pygame.Surface):
     def health(self, value):
         # If the new health value < current health then damage has been done
         if value < self.__health:
-            if self.__damage_cooldown == 0:
+            if self.__damage_cooldown <= 0:
                 damage = (self.__health - value) - DataLoader.get_player_defense()
                 self.__health -= damage if damage > 0 else 0
                 self.__damage_cooldown = PLAYER_DAMAGE_COOLDOWN
@@ -63,7 +67,7 @@ class Player(pygame.Surface):
         pass
 
     def get_normalised_pos(self, board, flag=1):
-        return (self.x - board.x, self.y - board.y) if flag == 1 else self.__player_shell(self.x - board.x, self.y - board.y, self.name)
+        return (self.x - board.x, self.y - board.y) if flag == 1 else self.__player_shell(self.x - board.x, self.y - board.y, self.name, self.degrees)
 
     def reset_health_and_mana(self):
         self.__max_health = (100 * DataLoader.player_data["level"]) + (DataLoader.player_data["attributes"]["health"] * 20)
@@ -78,8 +82,8 @@ class Player(pygame.Surface):
 
     def update(self, mx, my):
         self.fill((0, 0, 0, 0))
-        degrees = math.degrees(math.atan2((self.x + self.__width) - mx, (self.y + self.__height) - my))
-        rotated_img = pygame.transform.rotate(self.__img, degrees)
+        self.degrees = math.degrees(math.atan2((self.x + self.__width) - mx, (self.y + self.__height) - my))
+        rotated_img = pygame.transform.rotate(self.__img, self.degrees)
         self.blit(rotated_img, (self.__width // 2, self.__height // 2))
 
         # Damage cooldown
@@ -98,23 +102,31 @@ class Teammate(pygame.Surface):
         self.__img = pygame.image.load(f"assets/{WINDOW_WIDTH}x{WINDOW_HEIGHT}/player_{player_num}.png")
         self.x, self.y = x, y
         self.name = name
+        self.degrees = 0
 
-    def update(self, mx, my):
+    @property
+    def width(self):
+        return self.__width
+
+    @property
+    def height(self):
+        return self.__height
+
+    def update(self):
         self.fill((0, 0, 0, 0))
-        degrees = math.degrees(math.atan2((self.x + self.__width) - mx, (self.y + self.__height) - my))
-        rotated_img = pygame.transform.rotate(self.__img, degrees)
+        rotated_img = pygame.transform.rotate(self.__img, self.degrees)
         self.blit(rotated_img, (self.__width // 2, self.__height // 2))
 
 
 class Enemy(pygame.Surface):
     """Base enemy class"""
-    def __init__(self, x, y, size, is_host):
+    def __init__(self, x, y, size, targeted_player, is_host):
         self.__width = ENTITY_INFO[size][0]
         self.__height = ENTITY_INFO[size][1]
         self.is_host = is_host
         super().__init__((self.__width * 2, self.__height * 2), pygame.SRCALPHA)
         self.x, self.y = x, y
-        self.__max_health = ENTITY_INFO[size][2]
+        self.__max_health = int(ENTITY_INFO[size][2] * (1 + (DataLoader.game_level / 10)))
         self.__health = self.__max_health
         self.__img = pygame.image.load(f"assets/{WINDOW_WIDTH}x{WINDOW_HEIGHT}/{size}.png")
         self.__board = None
@@ -123,6 +135,11 @@ class Enemy(pygame.Surface):
         self.__size = size
         self.__colour_grad = [i for i in colour_lerp((255, 9, 0), (0, 255, 0), self.__max_health)]
         self.__damage_cooldown = 0
+        self.__targeted_player = targeted_player
+
+    @property
+    def targeted_player(self):
+        return self.__targeted_player
 
     @property
     def width(self):
@@ -204,7 +221,7 @@ class Enemy(pygame.Surface):
         # Get the acc cell positions of path
         return [cell_table[(a[i].x, a[i].y)] for i in range(0, len(a), 2)]
 
-    def __find_path(self, start_x: int, start_y: int, end_x: int, end_y: int, cell_table: dict, player: Player) -> tuple:
+    def __find_path(self, start_x: int, start_y: int, end_x: int, end_y: int, cell_table: dict) -> tuple:
         """
         Finds path for enemy to move to player
         :param start_x: Current x coord
@@ -212,7 +229,6 @@ class Enemy(pygame.Surface):
         :param end_x: Player x coord
         :param end_y: Player y coord
         :param cell_table: Dict of cell pos and file pos
-        :param player: Player obj
         :return: x and y move amounts
         """
         # Get path
@@ -226,24 +242,27 @@ class Enemy(pygame.Surface):
         # If enemy is in the same cell as the player
         elif len(path) == 1:
             self.__is_moving = True
-            self.__move(player.x, player.y)
+            self.__move(
+                self.__targeted_player.x + (self.__board.x if DataLoader.host_name != self.__targeted_player.name else 0),
+                self.__targeted_player.y + (self.__board.y if DataLoader.host_name != self.__targeted_player.name else 0)
+            )
 
         else:
             self.__is_moving = False
 
-    def update(self, closest_player: Player, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
+    def update(self, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
         self.fill((0, 0, 0, 0))
         self.__board = board
         if self.is_host:
             if self.__size != "large":
-                mv_info = self.__find_path(*cur_pos, *player_pos, cell_table, closest_player)
+                mv_info = self.__find_path(*cur_pos, *player_pos, cell_table)
 
                 if self.__is_moving and mv_info is not None:
                     self.x += mv_info[0]
                     self.y += mv_info[1]
 
         # Rotates enemy image towards player
-        degrees = math.degrees(math.atan2(self.x - closest_player.x, self.y - closest_player.y))
+        degrees = math.degrees(math.atan2(self.x - self.__targeted_player.x, self.y - self.__targeted_player.y))
         rotated_img = pygame.transform.rotate(self.__img, degrees)
         self.blit(rotated_img, (self.__width // 2, self.__height // 2))
 
@@ -267,47 +286,47 @@ class Enemy(pygame.Surface):
 
 
 class SmallEnemy(Enemy):
-    def __init__(self, x, y, is_host, origin=0):
-        super().__init__(x, y, "small", is_host)
+    def __init__(self, x, y, targeted_player, is_host, origin=0):
+        super().__init__(x, y, "small", targeted_player, is_host)
         self.__speed = 10
         self.origin = origin
 
     @classmethod
     def from_large_enemy(cls, parent):
-        return cls(parent.x + parent.width, parent.y + parent.height, parent.is_host, 1)
+        return cls(parent.x + parent.width, parent.y + parent.height, parent.targeted_player, parent.is_host, 1)
 
 
 class MediumEnemy(Enemy):
-    def __init__(self, x, y, is_host):
-        super().__init__(x, y, "medium", is_host)
+    def __init__(self, x, y, targeted_player, is_host):
+        super().__init__(x, y, "medium", targeted_player, is_host)
         self.__speed = 4
         self.bullets = []
 
-    def update(self, closest_player: Player, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
+    def update(self, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
         # Call superclass update() function for movement
-        super().update(closest_player, cur_pos, player_pos, cell_table, board)
+        super().update(cur_pos, player_pos, cell_table, board)
         if self.is_host:
             # Attack behaviour
             if randint(1, 10) == 10:
                 self.bullets.append(
                     Bullet(
                         self.x + self.width - board.x, self.y + self.height - board.y,
-                        closest_player.x + closest_player.width - board.x, closest_player.y + closest_player.height - board.y,
+                        self.targeted_player.x + self.targeted_player.width - board.x, self.targeted_player.y + self.targeted_player.height - board.y,
                         DataLoader.possible_items["medium_enemy_weapon"]
                     )
                 )
 
 
 class LargeEnemy(Enemy):
-    def __init__(self, x, y, is_host):
-        super().__init__(x, y, "large", is_host)
+    def __init__(self, x, y, targeted_player, is_host):
+        super().__init__(x, y, "large", targeted_player, is_host)
         self.l_enemy_pos = []
         self.spawned_enemies = []
         self.bezier_points = []
 
-    def update(self, closest_player: Player, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
+    def update(self, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
         # Call superclass update function to change enemy visual
-        super().update(closest_player, cur_pos, player_pos, cell_table, board)
+        super().update(cur_pos, player_pos, cell_table, board)
 
         if self.is_host:
             # Stop enemy from moving

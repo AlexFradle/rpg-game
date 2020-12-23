@@ -15,13 +15,12 @@ class DataLoader:
     loot_table = json.load(open(LOOT_TABLE_PATH))
     tree_root = ElementTree.parse(SKILL_TREE_PATH).getroot()
     all_player_data = json.load(open(PLAYER_DATA_PATH))
+    game_level = 1
+    host_name = None
     player_data = None
     __funcs = None
 
     def __init__(self) -> None:
-        if DataLoader.player_name not in DataLoader.all_player_data:
-            self.create_new_player()
-
         DataLoader.player_data = json.load(open(PLAYER_DATA_PATH))[DataLoader.player_name]
         DataLoader.__funcs = {i[0]: i[1] for i in inspect.getmembers(self, inspect.ismethod) if not i[0].startswith("__")}
         self.__resize_images()
@@ -37,7 +36,7 @@ class DataLoader:
             f.write(maze)
 
     @staticmethod
-    def create_new_player() -> None:
+    def create_new_player(name: str, class_: str) -> None:
         """
         Creates a new player character in the player_data.json file
         :return: None
@@ -45,8 +44,7 @@ class DataLoader:
         with open(PLAYER_DATA_PATH) as f:
             file = json.load(f)
 
-        # TODO: Make it so that player can choose class
-        file[DataLoader.player_name] = {
+        file[name] = {
             "armor": {"head": "basic_head", "chest": "basic_chest", "legs": "basic_legs", "feet": "basic_feet"},
             "hotbar": ["axe", None, None, None, None],
             "inventory": [None] * 20,
@@ -56,11 +54,13 @@ class DataLoader:
             "xp": 0,
             "unused_sp": 0,
             "coins": 0,
-            "class": "mage"
+            "class": class_
         }
 
         with open(PLAYER_DATA_PATH, "w") as f:
             json.dump(file, f, indent=4)
+
+        DataLoader.all_player_data = json.load(open(PLAYER_DATA_PATH))
 
     @staticmethod
     def change_file(func_name: str, *args) -> None:
@@ -148,6 +148,16 @@ class DataLoader:
         :return: Updated file
         """
         file[DataLoader.player_name]["attributes"][attr] += amount
+        return file
+
+    def __increment_sp(self, file: dict, amount: int):
+        """
+        Increments the unused_sp value
+        :param file: Dict to update
+        :param amount: The amount to increment the value by
+        :return: Updated file
+        """
+        file[DataLoader.player_name]["unused_sp"] += amount
         return file
 
     def __add_to_inv(self, file: dict, item: str, pos: int) -> dict:
@@ -241,6 +251,19 @@ class DataLoader:
         :return: Updated file
         """
         file[DataLoader.player_name]["level"] += 1
+        return file
+
+    def __add_skill(self, file: dict, skill: str):
+        """
+        Either add or increment a skill in the skill tree
+        :param file: Dict to update
+        :param skill: Name of skill to add
+        :return: Updated file
+        """
+        if file[DataLoader.player_name]["skills"].get(skill):
+            file[DataLoader.player_name]["skills"][skill] += 1
+        else:
+            file[DataLoader.player_name]["skills"][skill] = 1
         return file
 
 

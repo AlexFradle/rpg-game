@@ -4,6 +4,7 @@ from itertools import chain
 from constants import *
 from xml.etree.ElementTree import Element
 from typing import Union
+from time import time
 
 
 class Hotbar(pygame.Surface):
@@ -709,6 +710,7 @@ class ItemDropDisplay(pygame.Surface):
         self.__width = WINDOW_WIDTH // 2
         self.__height = WINDOW_HEIGHT // 2
         self.__items = []
+        self.__times = []
 
     @property
     def width(self):
@@ -725,6 +727,7 @@ class ItemDropDisplay(pygame.Surface):
         :return: None
         """
         self.__items.insert(0, item)
+        self.__times.insert(0, time())
 
     def update(self, font: pygame.font.Font) -> None:
         """
@@ -758,6 +761,10 @@ class ItemDropDisplay(pygame.Surface):
                 (self.width - item[1].get_width() - str_width, (pos * item[1].get_height()) + (str_height // 2))
             )
 
+            if time() - self.__times[pos] >= 3:
+                del self.__items[pos]
+                del self.__times[pos]
+
 
 class Menu(pygame.Surface):
     def __init__(self, x: int, y: int, buttons: list) -> None:
@@ -784,6 +791,11 @@ class Menu(pygame.Surface):
     @property
     def y(self):
         return self.__y
+
+    def manual_press(self, button_name: str):
+        for b in self.__buttons:
+            if b[0] == button_name:
+                b[1]()
 
     def check_pressed(self, mx: int, my: int, flag: int=1) -> Union[None, pygame.Rect]:
         """
@@ -931,6 +943,151 @@ class SelectMenu(pygame.Surface):
             if len(button[0]) > 2:
                 third_txt = font.render(button[0][2], True, TEXT_COLOUR)
                 self.blit(third_txt, (button_pos.x, button_pos.y + button_pos.h - font.size(button[0][2])[1]))
+
+
+class CharacterCreator(pygame.Surface):
+    def __init__(self):
+        super().__init__((WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2), pygame.SRCALPHA)
+        self.__width = WINDOW_WIDTH // 2
+        self.__height = WINDOW_HEIGHT // 2
+        self.__x = (WINDOW_WIDTH // 2) - (self.__width // 2)
+        self.__y = (WINDOW_HEIGHT // 2) - (self.__height // 2)
+        margin_x = 20
+        margin_y = 40
+        self.__name = ""
+        w = (self.__width - (margin_x * 5)) // 4
+        h = (self.__height - (margin_y * 4)) // 3
+        self.__name_rect = pygame.Rect(margin_x, margin_y, self.__width - (margin_x * 2), h)
+        self.__confirm_rect = pygame.Rect((margin_x * 2) + w, (margin_y * 3) + (h * 2), (w * 2) + margin_x, h)
+        self.__class_rects = [pygame.Rect((margin_x * (i + 1)) + (w * i), (margin_y * 2) + h, w, h) for i in range(4)]
+        self.__selected_class = None
+        self.__confirm_pressed = False
+
+    @property
+    def x(self):
+        return self.__x
+
+    @property
+    def y(self):
+        return self.__y
+
+    @property
+    def confirm_pressed(self):
+        return self.__confirm_pressed
+
+    @property
+    def selected_class(self):
+        return self.__selected_class
+
+    @property
+    def name(self):
+        return self.__name
+
+    def add_char(self, char: str) -> None:
+        if len(self.__name) < 21:
+            self.__name += char
+
+    def remove_char(self) -> None:
+        if len(self.__name) > 0:
+            self.__name = self.__name[:-1]
+
+    def check_pressed(self, mx: int, my: int) -> None:
+        mx, my = mx - self.__x, my - self.__y
+        for pos, cr in enumerate(self.__class_rects):
+            if cr.collidepoint(mx, my):
+                self.__selected_class = CLASS_NAMES[pos]
+
+        if self.__confirm_rect.collidepoint(mx, my) and self.__selected_class is not None and len(self.__name) > 0:
+            self.__confirm_pressed = True
+
+    def update(self, font, mx: int, my: int) -> None:
+        self.fill((60, 60, 60, 60))
+        mx, my = mx - self.__x, my - self.__y
+        pygame.draw.rect(self, (0, 0, 0), self.__name_rect)
+        pygame.draw.rect(self, (255, 255, 255), self.__name_rect, 5)
+        self.blit(
+            font.render(self.__name, True, (255, 255, 255)),
+            (
+                self.__name_rect.x - (font.size(self.__name)[0] // 2) + (self.__name_rect.w // 2),
+                self.__name_rect.y - (font.size(self.__name)[1] // 2) + (self.__name_rect.h // 2)
+            )
+        )
+        pygame.draw.rect(self, (255, 128, 0), self.__confirm_rect)
+        if self.__confirm_rect.collidepoint(mx, my):
+            pygame.draw.rect(self, (255, 255, 255), self.__confirm_rect, 5)
+        self.blit(
+            font.render("Confirm", True, (255, 255, 255)),
+            (
+                self.__confirm_rect.x - (font.size("Confirm")[0] // 2) + (self.__confirm_rect.w // 2),
+                self.__confirm_rect.y - (font.size("Confirm")[1] // 2) + (self.__confirm_rect.h // 2)
+            )
+        )
+        for pos, c in enumerate(self.__class_rects):
+            pygame.draw.rect(self, (255, 128, 0), c)
+            if c.collidepoint(mx, my):
+                pygame.draw.rect(self, (255, 255, 255), c, 5)
+            if CLASS_NAMES[pos] == self.__selected_class:
+                pygame.draw.rect(self, (0, 255, 0), c, 5)
+            x = c.x - (font.size(CLASS_NAMES[pos])[0] // 2) + (c.w // 2)
+            y = c.y - (font.size(CLASS_NAMES[pos])[1] // 2) + (c.h // 2)
+            txt = font.render(CLASS_NAMES[pos], True, (255, 255, 255))
+            self.blit(txt, (x, y))
+
+
+class MessageBox(pygame.Surface):
+    def __init__(self, txt: str, background: tuple):
+        self.__width = WINDOW_WIDTH // 1.1
+        self.__height = WINDOW_HEIGHT // 6
+        super().__init__((self.__width, self.__height))
+        self.__x = (WINDOW_WIDTH // 2) - (self.__width // 2)
+        self.__y = (WINDOW_HEIGHT // 2) - (self.__height // 2)
+        self.__txt = txt
+        margin_x = 10
+        margin_y = 10
+        self.__inner_box = pygame.Rect(margin_x, margin_y, self.__width - margin_x*2, self.__height - margin_y*2)
+        self.__background = background
+        button_width = self.__width // 10
+        button_height = self.__height // 4
+        self.__button = pygame.Rect(
+            (self.__width // 2) - (button_width // 2),
+            self.__height - button_height - margin_y*2,
+            button_width, button_height
+        )
+
+    @property
+    def x(self):
+        return self.__x
+
+    @property
+    def y(self):
+        return self.__y
+
+    @property
+    def width(self):
+        return self.__width
+
+    @property
+    def height(self):
+        return self.__height
+
+    def check_pressed(self, mx: int, my: int):
+        if self.__button.collidepoint(mx - self.__x, my - self.__y):
+            return True
+
+    def update(self, font):
+        self.fill((60, 60, 60))
+        pygame.draw.rect(self, self.__background, self.__inner_box)
+        pygame.draw.rect(self, (255, 255, 255), self.__button)
+        txt = font.render(self.__txt, True, (255, 255, 255))
+        self.blit(
+            txt,
+            ((self.__width // 2) - (font.size(self.__txt)[0] // 2), (self.__height // 2) - (font.size(self.__txt)[1] // 2))
+        )
+        button_txt = font.render("EXIT", True, (0, 0, 0))
+        self.blit(
+            button_txt,
+            ((self.__width // 2) - (font.size("EXIT")[0] // 2), (self.__button.y + (self.__button.h // 2)) - (font.size("EXIT")[1] // 2))
+        )
 
 
 if __name__ == '__main__':
