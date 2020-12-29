@@ -13,7 +13,7 @@ class GameServer:
         self.sock.bind((self.host, self.port))
         self.clients = []
         self.host_game = host_game
-        self.players = [self.host_game.player_name]
+        self.players = [self.host_game.player.name]
         self.previous_packet = {}
 
     def get_init_packet(self) -> dict:
@@ -48,7 +48,7 @@ class GameServer:
             },
             "players": {
                 p.name: {
-                    "pos": (p.x, p.y) if p.name != self.host_game.player_name else p.get_normalised_pos(self.host_game.board),
+                    "pos": (p.x, p.y) if p.name != self.host_game.player.name else p.get_normalised_pos(self.host_game.board),
                     "num": self.players.index(p.name) + 1
                 }
                 for p in [self.host_game.player] + list(self.host_game.other_players.values())
@@ -74,7 +74,7 @@ class GameServer:
                 ...
             },
             'players': {
-                name: {'pos': (x, y), 'degrees': degrees, 'num': num},
+                name: {'pos': (x, y), 'degrees': degrees, 'num': num, 'lives': lives, 'is_alive': is_alive, 'circle_stage': circle_stage},
                 ...
             },
             'bullets': {
@@ -89,6 +89,7 @@ class GameServer:
         :param new_data: Data from the client
         :return: Combined data of client and host
         """
+        sync_name = new_data["player"]["name"]
         synced = {
             "enemies": {
                 k: {
@@ -101,9 +102,12 @@ class GameServer:
             },
             "players": {
                 p.name: {
-                    "pos": (p.x, p.y) if p.name != new_data["player"]["name"] else (new_data["player"]["pos"][0], new_data["player"]["pos"][1]),
-                    "degrees": p.degrees if p.name != new_data["player"]["name"] else new_data["player"]["degrees"],
-                    "num": self.players.index(p.name) + 1
+                    "pos": (p.x, p.y) if p.name != sync_name else (new_data["player"]["pos"][0], new_data["player"]["pos"][1]),
+                    "degrees": p.degrees if p.name != sync_name else new_data["player"]["degrees"],
+                    "num": self.players.index(p.name) + 1,
+                    "lives": p.lives if p.name != sync_name else new_data["player"]["lives"],
+                    "is_alive": p.is_alive if p.name != sync_name else new_data["player"]["is_alive"],
+                    "circle_stage": p.circle_stage if p.name != sync_name else new_data["player"]["circle_stage"]
                 }
                 for p in [self.host_game.player.get_normalised_pos(self.host_game.board, 2)] + list(self.host_game.other_players.values())
             },
@@ -136,14 +140,17 @@ class GameServer:
 
         # Updates other player positions
         for k in new_data["players"]:
-            if k != self.host_game.player_name:
+            if k != self.host_game.player.name:
                 self.host_game.other_players[k].x = new_data["players"][k]["pos"][0]
                 self.host_game.other_players[k].y = new_data["players"][k]["pos"][1]
                 self.host_game.other_players[k].degrees = new_data["players"][k]["degrees"]
+                self.host_game.other_players[k].lives = new_data["players"][k]["lives"]
+                self.host_game.other_players[k].is_alive = new_data["players"][k]["is_alive"]
+                self.host_game.other_players[k].circle_stage = new_data["players"][k]["circle_stage"]
 
         # Updates bullets fired by clients to the host game or creates new ones
         for n in new_data["bullets"]:
-            if n != self.host_game.player_name and n in self.host_game.bullets:
+            if n != self.host_game.player.name and n in self.host_game.bullets:
                 for k in new_data["bullets"][n]:
                     if k in self.host_game.bullets[n]:
                         self.host_game.bullets[n][k].x = new_data["bullets"][n][k]["pos"][0]
@@ -173,7 +180,7 @@ class GameServer:
 
         # Deletes bullets that have been deleted on the clients game
         for n in new_data["bullets"]:
-            if n != self.host_game.player_name:
+            if n != self.host_game.player.name:
                 for k in list(self.host_game.bullets[n]):
                     if k not in new_data["bullets"][n]:
                         del self.host_game.bullets[n][k]
@@ -254,7 +261,7 @@ class GameClient:
         Loads all client game data into dict to send
         dict structure:
         {
-            'player': {'name': name, 'pos': (x, y), 'degrees': degrees},
+            'player': {'name': name, 'pos': (x, y), 'degrees': degrees, 'lives': lives, 'is_alive': is_alive, 'circle_stage': circle_stage},
             'enemies': {
                 id: {'health': health, 'health_changed': health_changed},
                 ...
@@ -270,9 +277,12 @@ class GameClient:
         """
         return {
             "player": {
-                "name": self.client_game.player_name,
+                "name": self.client_game.player.name,
                 "pos": self.client_game.player.get_normalised_pos(self.client_game.board),
-                "degrees": self.client_game.player.degrees
+                "degrees": self.client_game.player.degrees,
+                "lives": self.client_game.player.lives,
+                "is_alive": self.client_game.player.is_alive,
+                "circle_stage": self.client_game.player.circle_stage
             },
             "enemies": {
                 k: {
@@ -282,14 +292,14 @@ class GameClient:
                 } for k, e in self.client_game.enemies.items()
             },
             "bullets": {
-                self.client_game.player_name: {
+                self.client_game.player.name: {
                     k: {
                         "pos": (b.x, b.y),
                         "colour": b.colour,
                         "size": b.width,
                         "damage": b.damage,
                         "from_enemy": b.from_enemy
-                    } for k, b in self.client_game.bullets[self.client_game.player_name].items()
+                    } for k, b in self.client_game.bullets[self.client_game.player.name].items()
                 }
             }
         }
@@ -325,11 +335,14 @@ class GameClient:
 
         # Updates other player positions or creates new teammates if the player just joined
         for k in new_data["players"]:
-            if k != self.client_game.player_name:
+            if k != self.client_game.player.name:
                 if k in self.client_game.other_players:
                     self.client_game.other_players[k].x = new_data["players"][k]["pos"][0]
                     self.client_game.other_players[k].y = new_data["players"][k]["pos"][1]
                     self.client_game.other_players[k].degrees = new_data["players"][k]["degrees"]
+                    self.client_game.other_players[k].lives = new_data["players"][k]["lives"]
+                    self.client_game.other_players[k].is_alive = new_data["players"][k]["is_alive"]
+                    self.client_game.other_players[k].circle_stage = new_data["players"][k]["circle_stage"]
                 else:
                     self.client_game.other_players[k] = Teammate(
                         new_data["players"][k]["pos"][0] - self.client_game.board.x,
@@ -340,7 +353,7 @@ class GameClient:
 
         # Updates bullet positions fired by the host or other players
         for n in new_data["bullets"]:
-            if n != self.client_game.player_name:
+            if n != self.client_game.player.name:
                 for k in new_data["bullets"][n]:
                     if k in self.client_game.bullets[n]:
                         self.client_game.bullets[n][k].x = new_data["bullets"][n][k]["pos"][0]
@@ -358,7 +371,7 @@ class GameClient:
 
         # Deletes bullets that have been deleted on the host game
         for n in new_data["bullets"]:
-            if n != self.client_game.player_name:
+            if n != self.client_game.player.name:
                 for k in list(self.client_game.bullets[n]):
                     if k not in new_data["bullets"][n]:
                         del self.client_game.bullets[n][k]
@@ -370,7 +383,7 @@ class GameClient:
         """
         # Connects the socket to the host
         self.sock.connect((self.host, self.port))
-        self.send(json.dumps({"request": "CLIENT JOIN", "payload": {"player_name": self.client_game.player_name}}).encode())
+        self.send(json.dumps({"request": "CLIENT JOIN", "payload": {"player_name": self.client_game.player.name}}).encode())
 
         # Receives init packet from the host
         self.init_packet = json.loads(self.sock.recv(BYTES_RECV).decode())
@@ -378,7 +391,7 @@ class GameClient:
         # Creates teammate objects using their positions and number
         self.client_game.other_players = {
             k: Teammate(v["pos"][0], v["pos"][1], k, v["num"])
-            for k, v in self.init_packet["players"].items() if k != self.client_game.player_name
+            for k, v in self.init_packet["players"].items() if k != self.client_game.player.name
         }
 
         # Creates enemies dict using the data
@@ -398,7 +411,7 @@ class GameClient:
 
         # Creates player object using the correct number
         self.client_game.player = Player(
-            self.client_game.player_name,
+            self.client_game.player.name,
             sorted([self.init_packet["players"][i]["num"] for i in self.init_packet["players"]])[-1] + 1
         )
 
@@ -410,7 +423,7 @@ class GameClient:
             }
             for n, v in self.init_packet["bullets"].items()
         }
-        self.client_game.bullets[self.client_game.player_name] = {}
+        self.client_game.bullets[self.client_game.player.name] = {}
 
         # Starts listening to the host for data
         threading.Thread(target=self.listen, daemon=True).start()

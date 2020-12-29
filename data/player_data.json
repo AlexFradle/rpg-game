@@ -47,10 +47,11 @@
             "fire_hammer": 3,
             "phoenix": 1,
             "ember": 1,
-            "broken_heart": 1
+            "broken_heart": 1,
+            "fire_knife": 1
         },
         "level": 7,
-        "xp": 373,
+        "xp": 424,
         "unused_sp": 11,
         "coins": 200,
         "class": "mage"
@@ -99,7 +100,7 @@
         },
         "skills": {},
         "level": 1,
-        "xp": 81,
+        "xp": 91,
         "unused_sp": 0,
         "coins": 0,
         "class": "mage"

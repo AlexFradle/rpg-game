@@ -93,11 +93,11 @@ class Game:
         # DataLoader then created to call __init__ to load the player data
         DataLoader.player_name = name
         DataLoader.host_name = name if is_host else None
+        DataLoader.game_level = 1
         _ = DataLoader()
         self.display = display
         self.is_host = is_host
         self.is_singleplayer = is_singleplayer
-        self.player_name = name
 
         # Create all game surfaces
         self.hotbar = Hotbar()
@@ -111,7 +111,7 @@ class Game:
         self.st = SkillTree()
 
         # Create entities
-        self.player = Player(self.player_name, 1)
+        self.player = Player(name, 1)
         self.enemies = {i: MediumEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190, self.player, self.is_host) for i in range(2)}
 
         # Misc Variables
@@ -128,7 +128,7 @@ class Game:
         self.num_pos = {pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 3, pygame.K_4: 4, pygame.K_5: 5}
         self.frames = 30
         self.item_drops = []
-        self.bullets = {self.player_name: {}}
+        self.bullets = {self.player.name: {}}
         self.other_players = {}
         self.next_enemy_index = 2
         self.next_bullet_index = 0
@@ -158,7 +158,8 @@ class Game:
         for i in range(5 + DataLoader.game_level):
             spawn = choice(self.spawn_points)
             enemy_type = choice([SmallEnemy, MediumEnemy, LargeEnemy])
-            new_enemy = enemy_type(spawn[0], spawn[1], choice([self.player] + list(self.other_players.values())),self.is_host)
+            alive_players = [i for i in [self.player] + list(self.other_players.values()) if i.is_alive]
+            new_enemy = enemy_type(spawn[0], spawn[1], choice(alive_players), self.is_host)
             self.enemies[self.next_enemy_index] = new_enemy
             self.next_enemy_index += 1
         self.level_changing = False
@@ -451,10 +452,13 @@ class Game:
                     elif event.button == 5:
                         self.hotbar.change_selected(1)
 
-            # Check whether all players are still alive
-            if sorted(self.dead_players) == sorted([self.player.name] + list(self.other_players.keys())):
+            # Check whether the remaining players are a subset of the dead players
+            if set([self.player.name] + list(self.other_players.keys())).issubset(self.dead_players) and self.is_host:
                 self.all_dead = True
                 self.running = False
+                self.display.pause_menu.manual_press("Quit")
+                self.display.popup_box = self.display.create_message_popup(f"All of the team is dead. You survived until ROUND {DataLoader.game_level}")
+                self.display.message_popup = True
 
             # Check for player death
             if self.player.health < 1 and self.player.is_alive:
@@ -467,7 +471,7 @@ class Game:
                 if int(RESPAWN_TIME - (time() - time_of_death)) <= 0 < self.player.lives:
                     self.player.is_alive = True
                     self.player.reset_health_and_mana()
-                elif self.player.lives < 1:
+                elif self.player.lives < 1 and self.player.name not in self.dead_players:
                     self.dead_players.append(self.player.name)
 
             # Toggle level_changing if client
@@ -615,7 +619,7 @@ class Game:
                                 if cur_item.get("mana_used") is not None:
                                     if self.player.mana - cur_item["mana_used"] >= 0:
                                         # player.mana -= cur_item["mana_used"]
-                                        self.bullets[self.player_name][self.next_bullet_index] = Bullet(
+                                        self.bullets[self.player.name][self.next_bullet_index] = Bullet(
                                                 abs(self.board.x) + self.player.x + self.player.width,
                                                 abs(self.board.y) + self.player.y + self.player.height,
                                                 abs(self.board.x) + mx,
@@ -723,7 +727,7 @@ class Game:
                     if isinstance(enemy, MediumEnemy):
                         for b in enemy.bullets:
                             # Uses player name to add bullets to because only the host can spawn enemy bullets
-                            self.bullets[self.player_name][self.next_bullet_index] = b
+                            self.bullets[self.player.name][self.next_bullet_index] = b
                             self.next_bullet_index += 1
                         enemy.bullets = []
 
@@ -753,9 +757,18 @@ class Game:
                                 del self.bullets[name][bp]
 
             # Draw other players to the screen
-            for op in list(self.other_players.values()):
-                op.update()
-                self.board.blit(op, (op.x, op.y))
+            for key, op in list(self.other_players.items()):
+                if op.is_alive:
+                    op.update()
+                    self.board.blit(op, (op.x, op.y))
+                elif op.lives > 0:
+                    pygame.draw.circle(
+                        self.board, op.colour,
+                        (int(op.x + op.width), int(op.y + op.height)),
+                        op.circle_stage
+                    )
+                elif op.lives < 1:
+                    self.dead_players.append(key)
 
             # Draw board to screen
             self.display.blit(self.board, (self.board.x, self.board.y))
@@ -770,7 +783,12 @@ class Game:
                 self.player.update(mx, my)
                 self.display.blit(self.player, (self.player.x, self.player.y))
             elif self.player.lives > 0:
-                pygame.draw.circle(self.display, self.player.colour, (int(self.player.x + self.player.width), int(self.player.y + self.player.height)), int(time() - time_of_death) * 2)
+                self.player.circle_stage = int(time() - time_of_death) * 2
+                pygame.draw.circle(
+                    self.display, self.player.colour,
+                    (int(self.player.x + self.player.width), int(self.player.y + self.player.height)),
+                    self.player.circle_stage
+                )
 
             # Draw melee swing to screen
             if self.hotbar[self.hotbar.selected_pos][1] != self.melee_swing.item:
@@ -1019,7 +1037,8 @@ while game_on:
                 s.send(json.dumps(req).encode())
                 s.close()
             except ConnectionRefusedError:
-                print("GNS not on")
+                display.popup_box = display.create_message_popup("The GNS is not online")
+                display.message_popup = True
                 start_multiplayer_game = False
 
     if join_multiplayer_game:
@@ -1049,10 +1068,12 @@ while game_on:
                         loaded_servers = True
                         start_screen = False
                     else:
-                        print("No servers on")
+                        display.popup_box = display.create_message_popup("There are no servers online")
+                        display.message_popup = True
                         join_multiplayer_pressed = False
                 except ConnectionRefusedError:
-                    print("GNS not on")
+                    display.popup_box = display.create_message_popup("The GNS is not online")
+                    display.message_popup = True
                     join_multiplayer_pressed = False
             else:
                 window.blit(multiplayer_game_menu, (multiplayer_game_menu.x, multiplayer_game_menu.y))

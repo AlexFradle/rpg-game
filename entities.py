@@ -11,8 +11,9 @@ from random import randint
 from dataclasses import dataclass
 from math import sin, cos
 from collections import namedtuple
-from ctypes import *
+from ctypes import CDLL, POINTER, c_int, c_double
 from numpy.ctypeslib import ndpointer
+from typing import Union, Optional
 
 
 class Player(pygame.Surface):
@@ -30,10 +31,11 @@ class Player(pygame.Surface):
         self.mv_amount = PLAYER_MV_AMOUNT
         self.__damage_cooldown = 0
         self.name = name
-        self.__player_shell = namedtuple("player_shell", ["x", "y", "name", "degrees"])
+        self.__player_shell = namedtuple("player_shell", ["x", "y", "name", "degrees", "lives", "is_alive", "circle_stage"])
         self.lives = PLAYER_LIVES
         self.is_alive = True
         self.degrees = 0
+        self.circle_stage = 0
 
     @property
     def width(self):
@@ -66,21 +68,41 @@ class Player(pygame.Surface):
     def mana(self, value):
         pass
 
-    def get_normalised_pos(self, board, flag=1):
-        return (self.x - board.x, self.y - board.y) if flag == 1 else self.__player_shell(self.x - board.x, self.y - board.y, self.name, self.degrees)
+    def get_normalised_pos(self, board: Board, flag: int=1) -> Union[tuple, namedtuple]:
+        """
+        Get the position of the player without the board translation
+        :param board: The board class from which to get the coords from
+        :param flag: Determines whether a player shell is returned or not
+        :return: (normalised x, normalised y) or player shell
+        """
+        return (self.x - board.x, self.y - board.y) if flag == 1 else self.__player_shell(self.x - board.x, self.y - board.y, self.name, self.degrees, self.lives, self.is_alive, self.circle_stage)
 
-    def reset_health_and_mana(self):
+    def reset_health_and_mana(self) -> None:
+        """
+        Resets the players health and mana depending on the players level
+        :return: None
+        """
         self.__max_health = (100 * DataLoader.player_data["level"]) + (DataLoader.player_data["attributes"]["health"] * 20)
         self.__max_mana = (50 * DataLoader.player_data["level"]) + (DataLoader.player_data["attributes"]["mana"] * 10)
         self.__health = self.__max_health
         self.__mana = self.__max_mana
 
-    def reset_level(self):
+    def reset_level(self) -> None:
+        """
+        Resets the xp of the player and increments the level
+        :return: None
+        """
         if DataLoader.player_data["xp"] >= DataLoader.player_data["level"] * 100:
             DataLoader.change_file("reset_xp")
             DataLoader.change_file("add_level")
 
-    def update(self, mx, my):
+    def update(self, mx: int, my: int) -> None:
+        """
+        Updates the player surface
+        :param mx: Mouse x position
+        :param my: Mouse y position
+        :return: None
+        """
         self.fill((0, 0, 0, 0))
         self.degrees = math.degrees(math.atan2((self.x + self.__width) - mx, (self.y + self.__height) - my))
         rotated_img = pygame.transform.rotate(self.__img, self.degrees)
@@ -100,9 +122,13 @@ class Teammate(pygame.Surface):
         self.__height = ENTITY_INFO["player"][1]
         super().__init__((self.__width * 2, self.__height * 2), pygame.SRCALPHA)
         self.__img = pygame.image.load(f"assets/{WINDOW_WIDTH}x{WINDOW_HEIGHT}/player_{player_num}.png")
+        self.colour = self.__img.get_at((20, 20))[:3]
         self.x, self.y = x, y
         self.name = name
         self.degrees = 0
+        self.lives = PLAYER_LIVES
+        self.is_alive = True
+        self.circle_stage = 0
 
     @property
     def width(self):
@@ -112,7 +138,11 @@ class Teammate(pygame.Surface):
     def height(self):
         return self.__height
 
-    def update(self):
+    def update(self) -> None:
+        """
+        Updates the teammate surface
+        :return: None
+        """
         self.fill((0, 0, 0, 0))
         rotated_img = pygame.transform.rotate(self.__img, self.degrees)
         self.blit(rotated_img, (self.__width // 2, self.__height // 2))
@@ -136,6 +166,8 @@ class Enemy(pygame.Surface):
         self.__colour_grad = [i for i in colour_lerp((255, 9, 0), (0, 255, 0), self.__max_health)]
         self.__damage_cooldown = 0
         self.__targeted_player = targeted_player
+        self.__cur_cell = None
+        self.__centering = False
 
     @property
     def targeted_player(self):
@@ -163,10 +195,20 @@ class Enemy(pygame.Surface):
             self.__health = value
             self.__damage_cooldown = ENEMY_DAMAGE_COOLDOWN
 
-    def change_health_value(self, value):
+    def change_health_value(self, value: int) -> None:
+        """
+        Changes the health attribute, doesn't use setter to bypass the damage cooldown
+        :param value: The new health values
+        :return: None
+        """
         self.__health = value
 
-    def get_normalised_pos(self, board):
+    def get_normalised_pos(self, board: Board) -> tuple:
+        """
+        Gets the position of the ememy without the board translations applied
+        :param board: The board class from which to get the coords from
+        :return: (normalised x, normalised y)
+        """
         return self.x - board.x, self.y - board.y
 
     def __goto(self, prev_cell: tuple, new_cell: tuple) -> tuple:
@@ -186,7 +228,7 @@ class Enemy(pygame.Surface):
                 y_amount = self.__speed * dir_[1]
         return x_amount, y_amount
 
-    def __move(self, player_x: int, player_y: int) -> None:
+    def __move(self, dest_x: int, dest_y: int) -> None:
         """
         Uses the equation:
         (x, y) = (x1 + k(x2 - x1), y1 + k(y2 - y1))
@@ -196,22 +238,31 @@ class Enemy(pygame.Surface):
               k is the fraction of the line you want to divide
 
         This subdivides the line to calculate the next coordinate to move the enemy to depending on the speed
-        :param player_x: Players x coordinate
-        :param player_y: Players y coordinate
+        :param dest_x: Destination x coordinate
+        :param dest_y: Destination y coordinate
         :return: None
         """
         # Calculate Euclidean distance from current pos to player pos
-        dist = math.sqrt((player_x - self.x) ** 2 + (player_y - self.y) ** 2)
+        dist = math.sqrt((dest_x - self.x) ** 2 + (dest_y - self.y) ** 2)
 
         # Calculate the number of times the line can be divided by the speed
         num_of_divisions = abs(dist / (1 - self.__speed))
 
         # Sets new coords using equation
-        self.x = self.x + ((1 / num_of_divisions) * (player_x - self.x))
-        self.y = self.y + ((1 / num_of_divisions) * (player_y - self.y))
+        self.x = self.x + ((1 / num_of_divisions) * (dest_x - self.x))
+        self.y = self.y + ((1 / num_of_divisions) * (dest_y - self.y))
 
     @staticmethod
     def _get_path(start_x: int, start_y: int, end_x: int, end_y: int, cell_table: dict) -> list:
+        """
+        Gest the shortest path from the start to end coords
+        :param start_x: Start x position
+        :param start_y: Start y position
+        :param end_x: End x position
+        :param end_y: End y position
+        :param cell_table: Contains the board cell positions and corresponding maze file positions
+        :return: List of the cells to get to the destination
+        """
         # Columns and rows set to 0 because they are reassigned when the maze file is read
         a = list(reversed(AStar(0, 0).solve((start_y, start_x), (end_y, end_x))[0]))
 
@@ -221,7 +272,7 @@ class Enemy(pygame.Surface):
         # Get the acc cell positions of path
         return [cell_table[(a[i].x, a[i].y)] for i in range(0, len(a), 2)]
 
-    def __find_path(self, start_x: int, start_y: int, end_x: int, end_y: int, cell_table: dict) -> tuple:
+    def __find_path(self, start_x: int, start_y: int, end_x: int, end_y: int, cell_table: dict) -> Optional[tuple]:
         """
         Finds path for enemy to move to player
         :param start_x: Current x coord
@@ -234,23 +285,43 @@ class Enemy(pygame.Surface):
         # Get path
         path = self._get_path(start_x, start_y, end_x, end_y, cell_table)
 
-        # If the enemy isn't in the cell the player is in then move
-        if len(path) > 1:
-            self.__is_moving = True
-            return self.__goto(path[0], path[1])
+        if self.__cur_cell != path[0] and len(path) > 1:
+            self.__centering = True
 
-        # If enemy is in the same cell as the player
-        elif len(path) == 1:
-            self.__is_moving = True
-            self.__move(
-                self.__targeted_player.x + (self.__board.x if DataLoader.host_name != self.__targeted_player.name else 0),
-                self.__targeted_player.y + (self.__board.y if DataLoader.host_name != self.__targeted_player.name else 0)
-            )
-
+        if self.__centering:
+            dest_center_x = self.__board.cell_pos[path[0][1]][path[0][0]].centerx + self.__board.x
+            dest_center_y = self.__board.cell_pos[path[0][1]][path[0][0]].centery + self.__board.y
+            if pygame.Rect(self.x, self.y, self.__width, self.__height).collidepoint(dest_center_x, dest_center_y):
+                self.__centering = False
+                self.__cur_cell = path[0]
+            else:
+                self.__move(dest_center_x, dest_center_y)
         else:
-            self.__is_moving = False
+            # If the enemy isn't in the cell the player is in then move
+            if len(path) > 1:
+                self.__is_moving = True
+                return self.__goto(path[0], path[1])
 
-    def update(self, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
+            # If enemy is in the same cell as the player
+            elif len(path) == 1:
+                self.__is_moving = True
+                self.__move(
+                    self.__targeted_player.x + (self.__board.x if DataLoader.host_name != self.__targeted_player.name else 0),
+                    self.__targeted_player.y + (self.__board.y if DataLoader.host_name != self.__targeted_player.name else 0)
+                )
+
+            else:
+                self.__is_moving = False
+
+    def update(self, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board) -> None:
+        """
+        Updates the Enemy surface
+        :param cur_pos: Current position coords
+        :param player_pos: Player position coords
+        :param cell_table: Dict of cell pos and file pos
+        :param board: The board currently being used
+        :return: None
+        """
         self.fill((0, 0, 0, 0))
         self.__board = board
         if self.is_host:
