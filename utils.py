@@ -1,7 +1,7 @@
-from typing import Iterable, Union
+from typing import Iterable, Union, Tuple
 
 
-def line_collide(line_1_coords: Iterable, line_2_coords: Iterable) -> tuple:
+def line_collide(line_1_coords: Union[tuple, list], line_2_coords: Union[tuple, list]) -> Union[Tuple[float, float], bool]:
     """
     Line-Line Collision using the equation:
 
@@ -47,7 +47,7 @@ def line_collide(line_1_coords: Iterable, line_2_coords: Iterable) -> tuple:
     return (px, py) if 0.0 <= t <= 1.0 and 0.0 <= u <= 1.0 else False
 
 
-def colour_lerp(a: Union[tuple, list], b: Union[tuple, list], num_of_cols: int) -> tuple:
+def colour_lerp(a: Union[tuple, list], b: Union[tuple, list], num_of_cols: int) -> Tuple[float, float]:
     """
     Colour linear interpolation between c1 and c2
     Uses the equation:

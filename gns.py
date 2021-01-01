@@ -5,7 +5,7 @@ from constants import GNS_IP, GNS_PORT
 
 
 class GNS:
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int) -> None:
         self.host = host
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

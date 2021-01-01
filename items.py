@@ -4,7 +4,7 @@ from constants import *
 
 
 class Item:
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         self.__name = name
         self.__data = DataLoader.possible_items[name]
 
@@ -18,7 +18,7 @@ class Item:
 
 
 class ItemDrop(pygame.Surface):
-    def __init__(self, x, y, item):
+    def __init__(self, x: int, y: int, item: Item) -> None:
         self.__width = int((WINDOW_HEIGHT / 720) * ITEM_DROP_WIDTH)
         self.__height = int((WINDOW_HEIGHT / 720) * ITEM_DROP_HEIGHT)
         super().__init__((self.__width, self.__height), pygame.SRCALPHA)
@@ -40,7 +40,11 @@ class ItemDrop(pygame.Surface):
     def height(self):
         return self.__height
 
-    def update(self):
+    def update(self) -> None:
+        """
+        Updates the ItemDrop surface
+        :return: None
+        """
         self.fill(ITEM_DROP_BACKGROUND)
         if self.__play_animation:
             try:

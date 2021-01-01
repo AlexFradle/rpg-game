@@ -150,7 +150,7 @@ class DataLoader:
         file[DataLoader.player_name]["attributes"][attr] += amount
         return file
 
-    def __increment_sp(self, file: dict, amount: int):
+    def __increment_sp(self, file: dict, amount: int) -> dict:
         """
         Increments the unused_sp value
         :param file: Dict to update
@@ -253,7 +253,7 @@ class DataLoader:
         file[DataLoader.player_name]["level"] += 1
         return file
 
-    def __add_skill(self, file: dict, skill: str):
+    def __add_skill(self, file: dict, skill: str) -> dict:
         """
         Either add or increment a skill in the skill tree
         :param file: Dict to update

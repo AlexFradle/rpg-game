@@ -13,11 +13,11 @@ from math import sin, cos
 from collections import namedtuple
 from ctypes import CDLL, POINTER, c_int, c_double
 from numpy.ctypeslib import ndpointer
-from typing import Union, Optional
+from typing import Union, Optional, Tuple, NamedTuple, List
 
 
 class Player(pygame.Surface):
-    def __init__(self, name, player_num):
+    def __init__(self, name: str, player_num: int) -> None:
         self.__width = ENTITY_INFO["player"][0]
         self.__height = ENTITY_INFO["player"][1]
         super().__init__((self.__width * 2, self.__height * 2), pygame.SRCALPHA)
@@ -68,7 +68,7 @@ class Player(pygame.Surface):
     def mana(self, value):
         pass
 
-    def get_normalised_pos(self, board: Board, flag: int=1) -> Union[tuple, namedtuple]:
+    def get_normalised_pos(self, board: Board, flag: int=1) -> Union[Tuple[int, int], NamedTuple]:
         """
         Get the position of the player without the board translation
         :param board: The board class from which to get the coords from
@@ -203,7 +203,7 @@ class Enemy(pygame.Surface):
         """
         self.__health = value
 
-    def get_normalised_pos(self, board: Board) -> tuple:
+    def get_normalised_pos(self, board: Board) -> Tuple[int, int]:
         """
         Gets the position of the ememy without the board translations applied
         :param board: The board class from which to get the coords from
@@ -211,7 +211,7 @@ class Enemy(pygame.Surface):
         """
         return self.x - board.x, self.y - board.y
 
-    def __goto(self, prev_cell: tuple, new_cell: tuple) -> tuple:
+    def __goto(self, prev_cell: tuple, new_cell: tuple) -> Tuple[int, int]:
         """
         Gets x and y move amounts to move enemies to next cell
         :param prev_cell: Cell the enemy is currently in
@@ -253,7 +253,7 @@ class Enemy(pygame.Surface):
         self.y = self.y + ((1 / num_of_divisions) * (dest_y - self.y))
 
     @staticmethod
-    def _get_path(start_x: int, start_y: int, end_x: int, end_y: int, cell_table: dict) -> list:
+    def _get_path(start_x: int, start_y: int, end_x: int, end_y: int, cell_table: dict) -> List[Tuple[int, int]]:
         """
         Gest the shortest path from the start to end coords
         :param start_x: Start x position
@@ -272,7 +272,7 @@ class Enemy(pygame.Surface):
         # Get the acc cell positions of path
         return [cell_table[(a[i].x, a[i].y)] for i in range(0, len(a), 2)]
 
-    def __find_path(self, start_x: int, start_y: int, end_x: int, end_y: int, cell_table: dict) -> Optional[tuple]:
+    def __find_path(self, start_x: int, start_y: int, end_x: int, end_y: int, cell_table: dict) -> Optional[Tuple[int, int]]:
         """
         Finds path for enemy to move to player
         :param start_x: Current x coord
@@ -344,7 +344,7 @@ class Enemy(pygame.Surface):
         if self.__damage_cooldown > 0:
             self.__damage_cooldown -= 1
 
-    def kill(self) -> tuple:
+    def kill(self) -> list:
         """
         Called when enemy is dead
         :return: Tuple of (x, y, item, xp)
@@ -353,39 +353,10 @@ class Enemy(pygame.Surface):
         rng = randbelow(100) + 1
         for loot, chance in sorted(DataLoader.loot_table[self.__size]["drops"].items(), key=lambda x: x[1]):
             if rng <= chance:
-                return self.x, self.y, Item(loot), DataLoader.loot_table[self.__size]["xp"]
+                return [DataLoader.loot_table[self.__size]["xp"], self.x, self.y, Item(loot)]
 
-
-class SmallEnemy(Enemy):
-    def __init__(self, x, y, targeted_player, is_host, origin=0):
-        super().__init__(x, y, "small", targeted_player, is_host)
-        self.__speed = 10
-        self.origin = origin
-
-    @classmethod
-    def from_large_enemy(cls, parent):
-        return cls(parent.x + parent.width, parent.y + parent.height, parent.targeted_player, parent.is_host, 1)
-
-
-class MediumEnemy(Enemy):
-    def __init__(self, x, y, targeted_player, is_host):
-        super().__init__(x, y, "medium", targeted_player, is_host)
-        self.__speed = 4
-        self.bullets = []
-
-    def update(self, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
-        # Call superclass update() function for movement
-        super().update(cur_pos, player_pos, cell_table, board)
-        if self.is_host:
-            # Attack behaviour
-            if randint(1, 10) == 10:
-                self.bullets.append(
-                    Bullet(
-                        self.x + self.width - board.x, self.y + self.height - board.y,
-                        self.targeted_player.x + self.targeted_player.width - board.x, self.targeted_player.y + self.targeted_player.height - board.y,
-                        DataLoader.possible_items["medium_enemy_weapon"]
-                    )
-                )
+        # Returns xp regardless of if the enemy dropped any loot
+        return [DataLoader.loot_table[self.__size]["xp"]]
 
 
 class LargeEnemy(Enemy):
@@ -395,7 +366,15 @@ class LargeEnemy(Enemy):
         self.spawned_enemies = []
         self.bezier_points = []
 
-    def update(self, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
+    def update(self, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board) -> None:
+        """
+        Updates the largeEnemy surface
+        :param cur_pos: Current position coords
+        :param player_pos: Player position coords
+        :param cell_table: Dict of cell pos and file pos
+        :param board: The board currently being used
+        :return: None
+        """
         # Call superclass update function to change enemy visual
         super().update(cur_pos, player_pos, cell_table, board)
 
@@ -421,9 +400,54 @@ class LargeEnemy(Enemy):
                 self.spawned_enemies.append(SmallEnemy.from_large_enemy(self))
 
 
+class SmallEnemy(Enemy):
+    def __init__(self, x, y, targeted_player, is_host, origin=0):
+        super().__init__(x, y, "small", targeted_player, is_host)
+        self.__speed = 10
+        self.origin = origin
+
+    @classmethod
+    def from_large_enemy(cls, parent: LargeEnemy):
+        """
+        Creates a new small enemy instance using the parents position and targeted player
+        :param parent: The large enemy that has spawned the small enemy
+        :return: A new SmallEnemy instance
+        """
+        return cls(parent.x + parent.width, parent.y + parent.height, parent.targeted_player, parent.is_host, 1)
+
+
+class MediumEnemy(Enemy):
+    def __init__(self, x, y, targeted_player, is_host):
+        super().__init__(x, y, "medium", targeted_player, is_host)
+        self.__speed = 4
+        self.bullets = []
+
+    def update(self, cur_pos: tuple, player_pos: tuple, cell_table: dict, board: Board):
+        """
+        Updates the MediumEnemy surface
+        :param cur_pos: Current position coords
+        :param player_pos: Player position coords
+        :param cell_table: Dict of cell pos and file pos
+        :param board: The board currently being used
+        :return: None
+        """
+        # Call superclass update() function for movement
+        super().update(cur_pos, player_pos, cell_table, board)
+        if self.is_host:
+            # Attack behaviour
+            if randint(1, 10) == 10:
+                self.bullets.append(
+                    Bullet(
+                        self.x + self.width - board.x, self.y + self.height - board.y,
+                        self.targeted_player.x + self.targeted_player.width - board.x, self.targeted_player.y + self.targeted_player.height - board.y,
+                        DataLoader.possible_items["medium_enemy_weapon"]
+                    )
+                )
+
+
 class MeleeSwing(pygame.Surface):
     """Surface which the melee swing animation is drawn to"""
-    def __init__(self, owner: Player, item: str):
+    def __init__(self, owner: Player, item: str) -> None:
         # Calculate the current items melee distance if it is a melee weapon
         if DataLoader.possible_items[item].get("melee_dist") is not None:
             self.__width = MAX_MELEE_SWING_WIDTH * (DataLoader.possible_items[item]["melee_dist"] / 100)
@@ -451,7 +475,7 @@ class MeleeSwing(pygame.Surface):
     def height(self):
         return self.__height
 
-    def get_coords(self):
+    def get_coords(self) -> Tuple[int, int, int, int]:
         """
         Calculate coords on melee_swing circle using the equation:
         (x, y) = (cx + (r * cos(angle)), cy - (r * sin(angle)))
@@ -503,7 +527,7 @@ class MeleeSwing(pygame.Surface):
 
 
 class Bullet(pygame.Rect):
-    def __init__(self, origin_x: int, origin_y: int, target_x: int, target_y: int, weapon: dict):
+    def __init__(self, origin_x: int, origin_y: int, target_x: int, target_y: int, weapon: dict) -> None:
         super().__init__(origin_x, origin_y, weapon["proj_size"], weapon["proj_size"])
         self.x = origin_x
         self.y = origin_y
@@ -573,7 +597,7 @@ class Bullet(pygame.Rect):
 
 
 class PseudoBullet(pygame.Rect):
-    def __init__(self, x, y, colour, size, damage, from_enemy):
+    def __init__(self, x: int, y: int, colour: tuple, size: int, damage: int, from_enemy: bool) -> None:
         self.__width = size
         self.__height = size
         super().__init__(x, y, self.__width, self.__height)
@@ -596,7 +620,7 @@ class Bezier:
     control_points: list
     num_of_points: int
 
-    def get_points(self) -> list:
+    def get_points(self) -> List[Tuple[int, int]]:
         """
         Uses B to get all (x, y) coords of the points
         :return: List of all coords

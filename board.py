@@ -5,7 +5,7 @@ pygame.init()
 
 
 class Wall(pygame.Rect):
-    def __init__(self, x: int, y: int, used: int, orientation: int):
+    def __init__(self, x: int, y: int, used: int, orientation: int) -> None:
         # 1 = vertical, 2 = horizontal
         w = WALL_VERTICAL_WIDTH if orientation == 1 else WALL_HORIZONTAL_WIDTH
         h = WALL_VERTICAL_HEIGHT if orientation == 1 else WALL_HORIZONTAL_HEIGHT
@@ -16,7 +16,7 @@ class Wall(pygame.Rect):
 
 
 class Cell(pygame.Rect):
-    def __init__(self, x: int, y: int):
+    def __init__(self, x: int, y: int) -> None:
         w, h = CELL_WIDTH, CELL_HEIGHT
         super().__init__(x, y, w, h)
         self.x = x
@@ -24,7 +24,7 @@ class Cell(pygame.Rect):
 
 
 class Door(pygame.Rect):
-    def __init__(self, x: int, y: int, used: int, orientation: int, offset: int):
+    def __init__(self, x: int, y: int, used: int, orientation: int, offset: int) -> None:
         # 1 = vertical, 2 = horizontal
         w = DOOR_VERTICAL_WIDTH if orientation == 1 else DOOR_HORIZONTAL_WIDTH
         h = DOOR_VERTICAL_HEIGHT if orientation == 1 else DOOR_HORIZONTAL_HEIGHT
@@ -36,7 +36,7 @@ class Door(pygame.Rect):
 
 
 class Board(pygame.Surface):
-    def __init__(self, grid=None):
+    def __init__(self, grid: list=None) -> None:
         super().__init__((BOARD_WIDTH, BOARD_HEIGHT), pygame.SRCALPHA)
         self.__width = BOARD_WIDTH
         self.__height = BOARD_HEIGHT
@@ -44,6 +44,7 @@ class Board(pygame.Surface):
         self.x = 0
         self.y = 0
         cell_num = self.__grid[1].count("X")
+        # Uses seed in constants to ensure door offsets are the same across all games in multiplayer
         seed(RANDOM_SEED)
         # All cell positions
         self.cell_pos = [[Cell(CELL_WIDTH * j + (WALL_VERTICAL_WIDTH * (j + 1)), CELL_HEIGHT * i + (WALL_HORIZONTAL_HEIGHT * (i + 1))) for j in range(cell_num)]
@@ -84,8 +85,8 @@ class Board(pygame.Surface):
     def door_collide(self, player) -> str:
         """
         Checks if the player will collide with or is colliding with a door
-        :param player: Player object
-        :return:
+        :param player: Player instance
+        :return: Description of player in relation to the door
         """
         player_rect = pygame.Rect((player.x + (player.width // 2)) - self.x, (player.y + (player.height // 2)) - self.y, player.width, player.height)
         for row in self.vert_door_pos:
@@ -102,7 +103,12 @@ class Board(pygame.Surface):
 
         return "not on door"
 
-    def wall_collide(self, player):
+    def wall_collide(self, player) -> bool:
+        """
+        Checks whether the player is colliding with any walls
+        :param player: Player instance
+        :return: True if colliding else False
+        """
         player_rect = pygame.Rect((player.x + (player.width // 2)) - self.x, (player.y + (player.height // 2)) - self.y, player.width, player.height)
         for row in self.vert_wall_pos:
             for wall in row:
@@ -116,7 +122,13 @@ class Board(pygame.Surface):
 
         return False
 
-    def cell_collide(self, entity, is_normalised=False):
+    def cell_collide(self, entity, is_normalised: bool=False) -> tuple:
+        """
+        Finds which cell the entity is currently on
+        :param entity: Either Player or Enemy instance
+        :param is_normalised: Determines whether the entities position has been normalised
+        :return: x and y coords
+        """
         entity_rect = pygame.Rect(
             (entity.x + (entity.width // 2)) - (self.x if not is_normalised else 0),
             (entity.y + (entity.height // 2)) - (self.y if not is_normalised else 0),

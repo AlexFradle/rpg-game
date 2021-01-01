@@ -3,7 +3,7 @@ from data_loader import DataLoader
 from itertools import chain
 from constants import *
 from xml.etree.ElementTree import Element
-from typing import Union
+from typing import Union, Optional
 from time import time
 
 
@@ -102,13 +102,6 @@ class Hotbar(pygame.Surface):
         elif self.__selected_pos == self.inv_size:
             self.__selected_pos = 0
 
-    def get_item_space_size(self) -> tuple:
-        """
-        Gets size of item hotbar space
-        :return: Width and height of hotbar space
-        """
-        return self.__item_spaces[0].size
-
 
 class Inventory(pygame.Surface):
     """Displays the players current inventory"""
@@ -188,14 +181,13 @@ class Inventory(pygame.Surface):
 
             # If that space is used then draw picture
             if self.__items[pos] is not None:
-                self.blit(self.__items[pos][0], ((space.x + (space.w // 2)) - (self.__items[pos][0].get_width() // 2), (space.y + (space.h // 2)) - (self.__items[pos][0].get_height() // 2)))
-
-    def get_item_space_size(self) -> tuple:
-        """
-        Gets size of item inventory space
-        :return: Width and height of inventory space
-        """
-        return self.__item_spaces[0].size
+                self.blit(
+                    self.__items[pos][0],
+                    (
+                        (space.x + (space.w // 2)) - (self.__items[pos][0].get_width() // 2),
+                        (space.y + (space.h // 2)) - (self.__items[pos][0].get_height() // 2)
+                    )
+                )
 
 
 class Inspector(pygame.Surface):
@@ -413,7 +405,7 @@ class Attributes(pygame.Surface):
         self.__pluses = [pygame.Rect((self.__width // 2) + (self.__width // 8) + 10, (self.__height // 5) * (i + 1), self.__button_size, self.__button_size) for i in range(len(self.__attr_data))]
         self.__minuses = [pygame.Rect((self.__width // 2) + (self.__width // 8) + 10, ((self.__height // 5) * (i + 1)) + self.__button_size, self.__button_size, self.__button_size) for i in range(len(self.__attr_data))]
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int):
         return self.__pluses[item], self.__minuses[item]
 
     @property
@@ -792,12 +784,17 @@ class Menu(pygame.Surface):
     def y(self):
         return self.__y
 
-    def manual_press(self, button_name: str):
+    def manual_press(self, button_name: str) -> None:
+        """
+        Calls the function of the button with the specified name
+        :param button_name: Name of the button to press
+        :return: None
+        """
         for b in self.__buttons:
             if b[0] == button_name:
                 b[1]()
 
-    def check_pressed(self, mx: int, my: int, flag: int=1) -> Union[None, pygame.Rect]:
+    def check_pressed(self, mx: int, my: int, flag: int=1) -> Optional[pygame.Rect]:
         """
         Checks whether any of the buttons were pressed and either: execute the function or return the rect
         :param mx: mouse x position
@@ -878,7 +875,7 @@ class SelectMenu(pygame.Surface):
     def current_page(self, value: int):
         self.__current_page = value if 0 <= value < len(self.__buttons) else self.__current_page
 
-    def check_pressed(self, mx: int, my: int, flag: int=1) -> Union[None, pygame.Rect]:
+    def check_pressed(self, mx: int, my: int, flag: int=1) -> Optional[pygame.Rect]:
         """
         Checks whether any of the buttons were pressed and either: execute the function or return the rect
         :param mx: mouse x position
@@ -946,7 +943,7 @@ class SelectMenu(pygame.Surface):
 
 
 class CharacterCreator(pygame.Surface):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__((WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2), pygame.SRCALPHA)
         self.__width = WINDOW_WIDTH // 2
         self.__height = WINDOW_HEIGHT // 2
@@ -984,14 +981,29 @@ class CharacterCreator(pygame.Surface):
         return self.__name
 
     def add_char(self, char: str) -> None:
+        """
+        Adds character to the text box
+        :param char: The character to add
+        :return: None
+        """
         if len(self.__name) < 21:
             self.__name += char
 
     def remove_char(self) -> None:
+        """
+        Remove most recent character from the string
+        :return: None
+        """
         if len(self.__name) > 0:
             self.__name = self.__name[:-1]
 
     def check_pressed(self, mx: int, my: int) -> None:
+        """
+        Check if the confirm button has been pressed
+        :param mx: Mouse x position
+        :param my: Mouse y position
+        :return: None
+        """
         mx, my = mx - self.__x, my - self.__y
         for pos, cr in enumerate(self.__class_rects):
             if cr.collidepoint(mx, my):
@@ -1001,6 +1013,13 @@ class CharacterCreator(pygame.Surface):
             self.__confirm_pressed = True
 
     def update(self, font, mx: int, my: int) -> None:
+        """
+        Update the CharacterCreator surface
+        :param font: Font to draw the text with
+        :param mx: Mouse x position
+        :param my: Mouse y position
+        :return: None
+        """
         self.fill((60, 60, 60, 60))
         mx, my = mx - self.__x, my - self.__y
         pygame.draw.rect(self, (0, 0, 0), self.__name_rect)
@@ -1035,7 +1054,7 @@ class CharacterCreator(pygame.Surface):
 
 
 class MessageBox(pygame.Surface):
-    def __init__(self, txt: str, background: tuple):
+    def __init__(self, txt: str, background: tuple) -> None:
         self.__width = WINDOW_WIDTH // 1.1
         self.__height = WINDOW_HEIGHT // 6
         super().__init__((self.__width, self.__height))
@@ -1070,11 +1089,23 @@ class MessageBox(pygame.Surface):
     def height(self):
         return self.__height
 
-    def check_pressed(self, mx: int, my: int):
+    def check_pressed(self, mx: int, my: int) -> bool:
+        """
+        Checks if the exit button has been pressed
+        :param mx: Mouse x position
+        :param my: Mouse y position
+        :return: True if pressed else False
+        """
         if self.__button.collidepoint(mx - self.__x, my - self.__y):
             return True
+        return False
 
-    def update(self, font):
+    def update(self, font: pygame.font.Font) -> None:
+        """
+        Updates the MessageBox surface
+        :param font: Font to draw the text with
+        :return: None
+        """
         self.fill((60, 60, 60))
         pygame.draw.rect(self, self.__background, self.__inner_box)
         pygame.draw.rect(self, (255, 255, 255), self.__button)

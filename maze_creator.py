@@ -4,7 +4,7 @@ from data_loader import DataLoader
 
 
 class MazeCreator:
-    def __init__(self, w, h):
+    def __init__(self, w: int, h: int) -> None:
         self.width = w
         self.height = h
         self.grid = [

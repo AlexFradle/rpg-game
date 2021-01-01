@@ -2,7 +2,7 @@ from random import randint
 
 
 class Vertex:
-    def __init__(self, x, y, wall):
+    def __init__(self, x: int, y: int, wall: bool) -> None:
         self.x = x
         self.y = y
         self.f = 0  # Total cost
@@ -26,7 +26,7 @@ class Vertex:
 
 
 class AStar:
-    def __init__(self, cols, rows, from_file=True, is_maze=True):
+    def __init__(self, cols: int, rows: int, from_file: bool=True, is_maze: bool=True) -> None:
         self.cols = cols
         self.rows = rows
         self.open_set = []  # Unchecked vertices

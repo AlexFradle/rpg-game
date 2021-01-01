@@ -6,7 +6,7 @@ from constants import BYTES_RECV
 
 
 class GameServer:
-    def __init__(self, host, port, host_game):
+    def __init__(self, host: str, port: int, host_game) -> None:
         self.host = host
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -185,7 +185,12 @@ class GameServer:
                     if k not in new_data["bullets"][n]:
                         del self.host_game.bullets[n][k]
 
-    def send_custom_data_to_all(self, data: dict):
+    def send_custom_data_to_all(self, data: dict) -> None:
+        """
+        Sends custom data dictionary to all clients
+        :param data: Custom data
+        :return: None
+        """
         for clnt in self.clients:
             clnt.send(json.dumps(data).encode())
 
@@ -247,7 +252,7 @@ class GameServer:
 
 
 class GameClient:
-    def __init__(self, host, port, client_game):
+    def __init__(self, host: str, port: int, client_game) -> None:
         self.host = host
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

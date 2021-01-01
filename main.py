@@ -80,7 +80,12 @@ class Display(pygame.Surface):
         ])
 
     @staticmethod
-    def create_message_popup(txt: str):
+    def create_message_popup(txt: str) -> MessageBox:
+        """
+        Creates a MessageBox instance using the provided text
+        :param txt: The text to put in the MessageBox
+        :return: New MessageBox instance
+        """
         return MessageBox(txt, (255, 0, 0))
 
 
@@ -153,16 +158,6 @@ class Game:
         # Use new maze if host, else inherit the host maze
         self.board = Board() if self.is_host else Board(grid=self.grid)
         self.spawn_points = [(j.x + (j.w // 4), j.y + (j.h // 4), j.w, j.h) for i in self.board.cell_pos for j in i]
-
-    def spawn_enemies(self):
-        for i in range(5 + DataLoader.game_level):
-            spawn = choice(self.spawn_points)
-            enemy_type = choice([SmallEnemy, MediumEnemy, LargeEnemy])
-            alive_players = [i for i in [self.player] + list(self.other_players.values()) if i.is_alive]
-            new_enemy = enemy_type(spawn[0], spawn[1], choice(alive_players), self.is_host)
-            self.enemies[self.next_enemy_index] = new_enemy
-            self.next_enemy_index += 1
-        self.level_changing = False
 
     @staticmethod
     def inv_collide(inv: Inventory, mx: int, my: int) -> tuple:
@@ -277,19 +272,44 @@ class Game:
         drop_data = enemies[index].kill()
         del enemies[index]
 
-        if drop_data is not None:
-            DataLoader.change_file("add_xp", drop_data[3])
-            drop_data = drop_data[0] - board.x, drop_data[1] - board.y, drop_data[2]
+        DataLoader.change_file("add_xp", drop_data[0])
+
+        if len(drop_data) > 1:
+            drop_data = drop_data[1] - board.x, drop_data[2] - board.y, drop_data[3]
             item_drops.append(ItemDrop(*drop_data))
             return item_drops
 
     @staticmethod
-    def get_host_game_level():
+    def get_host_game_level() -> int:
+        """
+        Gets the game level stored in DataLoader
+        :return: The current game level
+        """
         return DataLoader.game_level
 
     @staticmethod
-    def set_client_game_level(lvl):
+    def set_client_game_level(lvl: int) -> None:
+        """
+        Sets the current game level to lvl
+        :param lvl: The level to set game level to
+        :return: None
+        """
         DataLoader.game_level = lvl
+
+    def spawn_enemies(self) -> None:
+        """
+        Spawns enemies by randomly selecting an enemy type and targeted player,
+        then adding the instance to the enemies list
+        :return: None
+        """
+        for i in range(5 + DataLoader.game_level):
+            spawn = choice(self.spawn_points)
+            enemy_type = choice([SmallEnemy, MediumEnemy, LargeEnemy])
+            alive_players = [i for i in [self.player] + list(self.other_players.values()) if i.is_alive]
+            new_enemy = enemy_type(spawn[0], spawn[1], choice(alive_players), self.is_host)
+            self.enemies[self.next_enemy_index] = new_enemy
+            self.next_enemy_index += 1
+        self.level_changing = False
 
     def start(self) -> None:
         """
