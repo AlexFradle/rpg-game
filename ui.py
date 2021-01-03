@@ -26,7 +26,7 @@ class Hotbar(pygame.Surface):
             ) for i in range(self.inv_size)
         ]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: int, value) -> None:
         if key < len(self.__items):
             self.__items[key] = value
 
@@ -84,7 +84,7 @@ class Hotbar(pygame.Surface):
             col = DataLoader.rarities[DataLoader.possible_items[self.__items[pos][1]]["rarity"]]
             pygame.draw.rect(self, col, space)
             if pos == self.__selected_pos:
-                pygame.draw.rect(self, (255, 255, 255), space, 5)
+                pygame.draw.rect(self, HOTBAR_SELECTED, space, 5)
 
             # If that space is used then draw picture
             if self.__items[pos] is not None:
@@ -405,7 +405,7 @@ class Attributes(pygame.Surface):
         self.__pluses = [pygame.Rect((self.__width // 2) + (self.__width // 8) + 10, (self.__height // 5) * (i + 1), self.__button_size, self.__button_size) for i in range(len(self.__attr_data))]
         self.__minuses = [pygame.Rect((self.__width // 2) + (self.__width // 8) + 10, ((self.__height // 5) * (i + 1)) + self.__button_size, self.__button_size, self.__button_size) for i in range(len(self.__attr_data))]
 
-    def __getitem__(self, item: int):
+    def __getitem__(self, item: int) -> tuple:
         return self.__pluses[item], self.__minuses[item]
 
     @property
@@ -550,7 +550,7 @@ class SkillTree(pygame.Surface):
         self.__bw_imgs = [pygame.image.load(f"{MAIN_ASSET_PATH}{i['elem'].tag}_bw.png") for i in self.__levels]
         self.__lines = self.__get_lines(img_dims)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> tuple:
         return self.__levels[item], self.__level_rects[item], self.__imgs[item]
 
     @property
@@ -684,14 +684,14 @@ class SkillTree(pygame.Surface):
 
         # Draw connecting lines between each tree element
         for line in self.__lines:
-            pygame.draw.aaline(self, (255, 255, 255), (line[0][0], line[0][1]), (line[1][0], line[1][1]))
+            pygame.draw.aaline(self, SKILLTREE_LINE, (line[0][0], line[0][1]), (line[1][0], line[1][1]))
 
         # Draw skill image
         for pos, rect in enumerate(self.__level_rects):
             # Draw border around image if the mouse is hovered over it
             if data is not None:
                 if data["st_pos"] == rect:
-                    pygame.draw.rect(self, (255, 255, 255), rect, 5)
+                    pygame.draw.rect(self, SKILLTREE_SELECTED, rect, 5)
             self.blit(self.__imgs[pos] if self.__levels[pos]["elem"].tag in DataLoader.player_data["skills"] else self.__bw_imgs[pos], rect)
 
 
@@ -1012,7 +1012,7 @@ class CharacterCreator(pygame.Surface):
         if self.__confirm_rect.collidepoint(mx, my) and self.__selected_class is not None and len(self.__name) > 0:
             self.__confirm_pressed = True
 
-    def update(self, font, mx: int, my: int) -> None:
+    def update(self, font: pygame.font.Font, mx: int, my: int) -> None:
         """
         Update the CharacterCreator surface
         :param font: Font to draw the text with
@@ -1020,36 +1020,36 @@ class CharacterCreator(pygame.Surface):
         :param my: Mouse y position
         :return: None
         """
-        self.fill((60, 60, 60, 60))
+        self.fill(CHARACTER_CREATOR_BACKGROUND)
         mx, my = mx - self.__x, my - self.__y
-        pygame.draw.rect(self, (0, 0, 0), self.__name_rect)
-        pygame.draw.rect(self, (255, 255, 255), self.__name_rect, 5)
+        pygame.draw.rect(self, CHARACTER_CREATOR_TEXT_BACKGROUND, self.__name_rect)
+        pygame.draw.rect(self, CHARACTER_CREATOR_TEXT_BORDER, self.__name_rect, 5)
         self.blit(
-            font.render(self.__name, True, (255, 255, 255)),
+            font.render(self.__name, True, TEXT_COLOUR),
             (
                 self.__name_rect.x - (font.size(self.__name)[0] // 2) + (self.__name_rect.w // 2),
                 self.__name_rect.y - (font.size(self.__name)[1] // 2) + (self.__name_rect.h // 2)
             )
         )
-        pygame.draw.rect(self, (255, 128, 0), self.__confirm_rect)
+        pygame.draw.rect(self, CHARACTER_CREATOR_BUTTON_COLOUR, self.__confirm_rect)
         if self.__confirm_rect.collidepoint(mx, my):
-            pygame.draw.rect(self, (255, 255, 255), self.__confirm_rect, 5)
+            pygame.draw.rect(self, CHARACTER_CREATOR_BUTTON_SELECTED, self.__confirm_rect, 5)
         self.blit(
-            font.render("Confirm", True, (255, 255, 255)),
+            font.render("Confirm", True, TEXT_COLOUR),
             (
                 self.__confirm_rect.x - (font.size("Confirm")[0] // 2) + (self.__confirm_rect.w // 2),
                 self.__confirm_rect.y - (font.size("Confirm")[1] // 2) + (self.__confirm_rect.h // 2)
             )
         )
         for pos, c in enumerate(self.__class_rects):
-            pygame.draw.rect(self, (255, 128, 0), c)
+            pygame.draw.rect(self, CHARACTER_CREATOR_BUTTON_COLOUR, c)
             if c.collidepoint(mx, my):
-                pygame.draw.rect(self, (255, 255, 255), c, 5)
+                pygame.draw.rect(self, CHARACTER_CREATOR_BUTTON_SELECTED, c, 5)
             if CLASS_NAMES[pos] == self.__selected_class:
-                pygame.draw.rect(self, (0, 255, 0), c, 5)
+                pygame.draw.rect(self, CHARACTER_CREATOR_BUTTON_PRESSED, c, 5)
             x = c.x - (font.size(CLASS_NAMES[pos])[0] // 2) + (c.w // 2)
             y = c.y - (font.size(CLASS_NAMES[pos])[1] // 2) + (c.h // 2)
-            txt = font.render(CLASS_NAMES[pos], True, (255, 255, 255))
+            txt = font.render(CLASS_NAMES[pos], True, TEXT_COLOUR)
             self.blit(txt, (x, y))
 
 
@@ -1106,15 +1106,15 @@ class MessageBox(pygame.Surface):
         :param font: Font to draw the text with
         :return: None
         """
-        self.fill((60, 60, 60))
+        self.fill(MESSAGE_BOX_BACKGROUND)
         pygame.draw.rect(self, self.__background, self.__inner_box)
-        pygame.draw.rect(self, (255, 255, 255), self.__button)
-        txt = font.render(self.__txt, True, (255, 255, 255))
+        pygame.draw.rect(self, MESSAGE_BOX_BUTTON_COLOUR, self.__button)
+        txt = font.render(self.__txt, True, TEXT_COLOUR)
         self.blit(
             txt,
             ((self.__width // 2) - (font.size(self.__txt)[0] // 2), (self.__height // 2) - (font.size(self.__txt)[1] // 2))
         )
-        button_txt = font.render("EXIT", True, (0, 0, 0))
+        button_txt = font.render("EXIT", True, MESSAGE_BOX_BUTTON_TEXT_COLOUR)
         self.blit(
             button_txt,
             ((self.__width // 2) - (font.size("EXIT")[0] // 2), (self.__button.y + (self.__button.h // 2)) - (font.size("EXIT")[1] // 2))

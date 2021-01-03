@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RPG Game Help</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+        }
+        li {
+            margin: 10px;
+        }
+        a:link, a:visited {
+            color: red;
+        }
+        a:hover {
+            color: white;
+            background-color: red;
+        }
+        .head-text {
+            font-size: 200%;
+            text-shadow: 2px 2px 5px rgb(255, 128, 0);
+            margin: 10px;
+            text-decoration: underline;
+        }
+        .subhead-text {
+            font-size: 150%;
+            text-shadow: 2px 2px 5px rgb(255, 128, 0);
+            margin: 10px;
+        }
+        .content-box {
+            max-width: 80vw;
+            margin: auto;
+        }
+        .body-text {
+            font-family: monospace;
+            margin: 10px;
+            font-size: 120%;
+        }
+        .list {
+            overflow: auto;
+        }
+        .demo {
+            float: right;
+            border-style: solid;
+            border-color: white;
+            border-width: 10px;
+            margin: 10px;
+            width: 30vw;
+            transition: all 0.5s ease;
+        }
+        .demo:hover {
+            width: 70vw;
+        }
+        .code {
+            font-family: monospace;
+            font-size: 150%;
+            background-color: rgb(60, 60, 60);
+            padding: 2px;
+        }
+        .code:hover {
+            background-color: white;
+            color: black;
+        }
+        #title {
+            font-size: 400%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="head-text" id="title">RPG Game Help</h1>
+    <div class="content-box">
+        <div class="head-text">Objective</div>
+        <div class="body-text">The player is in a maze</div>
+        <div class="head-text">Menu Navigation</div>
+        <div class="body-text list">
+            <img src="assets/help_page/title_screen.PNG" class="demo"/>
+            <div class="subhead-text">Title Screen:</div>
+            <ul>
+                <li><span class="code">L-CLICK</span> to execute the selected button</li>
+                <li>Singleplayer: creates a game where there is only one player(you)</li>
+                <li>Join Game: opens a new interface where the player can join a server</li>
+                <li>Create Game: creates a new multiplayer game where the player is the host</li>
+                <li>Create Character: opens a new interface for the player to create a new character</li>
+                <li>Quit: ends the game, closes the window</li>
+            </ul>
+        </div>
+        <div class="body-text list">
+            <img src="assets/help_page/join_game.PNG" class="demo"/>
+            <div class="subhead-text">Join Game Screen:</div>
+            <ul>
+                <li>
+                    If the GNS is online and there is a server online,
+                    the join game screen will show once create game has been pressed. Otherwise,
+                    an <a href="#errors">error</a> will show.
+                </li>
+                <li>All servers currently online will be listed</li>
+                <li><span class="code">L-CLICK</span> to join the selected server</li>
+            </ul>
+        </div>
+        <div class="body-text list">
+            <div class="subhead-text">Create Game:</div>
+            <ul>
+                <li>To create a multiplayer game the GNS has to be running. Otherwise,
+                    an <a href="#errors">error</a> will show.</li>
+            </ul>
+        </div>
+        <div class="body-text list">
+            <img src="assets/help_page/character_create.gif" class="demo"/>
+            <div class="subhead-text">Character Creator Screen:</div>
+            <ul>
+                <li><span class="code">a-z</span> to enter the name for the new character</li>
+                <li><span class="code">L-CLICK</span> to select one of the classes, represented with a green border once selected</li>
+                <li><span class="code">L-CLICK</span> to confirm the character creation</li>
+            </ul>
+        </div>
+        <div class="head-text">Controls</div>
+        <div class="body-text list">
+            <img src="assets/help_page/movement.gif" class="demo"/>
+            <div class="subhead-text">Movement:</div>
+            <ul>
+                <li><code class="code">W</code> to go forwards</li>
+                <li><span class="code">A</span> to go left</li>
+                <li><span class="code">S</span> to go backwards</li>
+                <li><span class="code">D</span> to go right</li>
+            </ul>
+        </div>
+        <div class="body-text list">
+            <img src="assets/help_page/inv.gif" class="demo">
+            <div class="subhead-text">User Interface:</div>
+            <ul>
+                <li><span class="code">ESC</span> to open the pause menu</li>
+                <li><span class="code">SCROLL-WHEEL-UP/DOWN</span> to change the selected item in the hotbar</li>
+                <li><span class="code">E</span> to open the inventory</li>
+                <li>
+                    <span class="code">1 - 5</span> to swap items from the inventory to hotbar,
+                    done while hovering over the desired item in the inventory
+                </li>
+                <li>
+                    <span class="code">R-CLICK</span> to swap armor items from the inventory to equipment,
+                    done while hovering over the desired item in the inventory
+                </li>
+                <li><span class="code">K</span> to open the skill tree</li>
+            </ul>
+        </div>
+        <div class="body-text list">
+            <img src="assets/help_page/aim.gif" class="demo"/>
+            <div class="subhead-text">Item Usage:</div>
+            <ul>
+                <li>Moving the mouse around the board will indicate where the player is looking</li>
+                <li><span class="code">L-CLICK</span> will use the selected item (weapon/consumable) in the hotbar</li>
+            </ul>
+        </div>
+        <div class="head-text">Gameplay</div>
+        <div class="body-text list">
+            <div class="subhead-text">Combat and Enemies:</div>
+            <ul>
+                <li></li>
+            </ul>
+        </div>
+        <div class="body-text list">
+            <div class="subhead-text">Loot:</div>
+            <ul>
+                <li></li>
+            </ul>
+        </div>
+        <div class="head-text" id="errors">Errors</div>
+        <div class="body-text list">
+            <div class="subhead-text">"The GNS is not online"</div>
+            <ul>
+                <li></li>
+            </ul>
+        </div>
+        <div class="body-text list">
+            <div class="subhead-text">"There are no servers online"</div>
+            <ul>
+                <li></li>
+            </ul>
+        </div>
+        <div class="body-text list">
+            <div class="subhead-text">"Host Disconnected"</div>
+            <ul>
+                <li></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

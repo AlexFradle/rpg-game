@@ -62,7 +62,7 @@ class AStar {
 
             // Get maze from text file
             std::string line;
-            std::ifstream file("maze.txt");
+            std::ifstream file("data/maze.txt");
             if(file.is_open()){
                 while(std::getline(file, line)){
                     str_grid.push_back(line);

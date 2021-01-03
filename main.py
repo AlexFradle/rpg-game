@@ -7,7 +7,7 @@ from data_loader import DataLoader
 from maze_creator import MazeCreator
 from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH, BEZIER_POINT_COLOUR, GNS_IP, \
     GNS_PORT, SELECT_MENU_WIDTH, MENU_WIDTH, MENU_HEIGHT, SELECT_MENU_HEIGHT, GAME_TITLE, TEXT_COLOUR, RESPAWN_TIME, \
-    LEVEL_CHANGE_TIME
+    LEVEL_CHANGE_TIME, DISPLAY_BACKGROUND
 from random import randint
 from utils import line_collide
 from items import ItemDrop
@@ -686,7 +686,7 @@ class Game:
             self.player.melee_cooldown += 1
 
             # Fill the display with black to draw on top of
-            self.display.fill((0, 0, 0))
+            self.display.fill(DISPLAY_BACKGROUND)
 
             # Update board surface
             self.board.update()
@@ -1013,7 +1013,7 @@ while game_on:
                     if create_character:
                         display.character_create_menu.check_pressed(*pygame.mouse.get_pos())
 
-    window.fill((0, 0, 0))
+    window.fill(DISPLAY_BACKGROUND)
 
     if start_screen:
         display.start_menu.update(start_menu_font, *pygame.mouse.get_pos())

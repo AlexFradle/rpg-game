@@ -121,6 +121,9 @@ class DataLoader:
                             im.save(new_path + file)
                             print(f"Saved {file}")
 
+                    elif size == "DONT_RESIZE OR MOVE":
+                        print(f"{file} ignored")
+
     @staticmethod
     def get_next_open_inv_slot() -> int:
         """

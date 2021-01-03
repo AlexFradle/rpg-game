@@ -53,14 +53,28 @@ ISSUES:
 
 
 
-1 a_star.py|||||||||||||||||||||||||||
-1 board.py|||||||||||||||||||||||||||
-1 data_loader.py|||||||||||||||||||||||||||
-1 entities.py|||||||||||||||||||||||||||
-1 gns.py|||||||||||||||||||||||||||
-1 items.py|||||||||||||||||||||||||||
-1 main.py|||||||||||||||||||||||||||
-1 maze_creator.py|||||||||||||||||||||||||||
-1 network.py|||||||||||||||||||||||||||
-1 ui.py|||||||||||||||||||||||||||
-1 utils.py|||||||||||||||||||||||||||
+1 a_star.py||||||||||||||||||||||||||||||
+1 board.py||||||||||||||||||||||||||||||
+1 data_loader.py||||||||||||||||||||||||||||||
+1 entities.py||||||||||||||||||||||||||||||
+1 gns.py||||||||||||||||||||||||||||||
+1 items.py||||||||||||||||||||||||||||||
+1 main.py||||||||||||||||||||||||||||||
+1 maze_creator.py||||||||||||||||||||||||||||||
+1 network.py||||||||||||||||||||||||||||||
+1 ui.py
+1 utils.py
+
+
+
+
+SCREENSHOTS:
++ Title Screen
++ Join multiplayer game screen
+  |-> Show message box on GNS rejection
+  |-> Show message box on No Game rejection
++ Create character screen
+- Main game screen <---------- MULTIPLAYER TO SHOW OTHER PLAYERS(3?)
+- Inventory screen with both equipment and attributes
+- Skill tree screen
+- Pause menu

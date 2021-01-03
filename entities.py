@@ -117,7 +117,7 @@ class Player(pygame.Surface):
 
 
 class Teammate(pygame.Surface):
-    def __init__(self, x, y, name, player_num):
+    def __init__(self, x: int, y: int, name: str, player_num: int) -> None:
         self.__width = ENTITY_INFO["player"][0]
         self.__height = ENTITY_INFO["player"][1]
         super().__init__((self.__width * 2, self.__height * 2), pygame.SRCALPHA)
@@ -150,7 +150,7 @@ class Teammate(pygame.Surface):
 
 class Enemy(pygame.Surface):
     """Base enemy class"""
-    def __init__(self, x, y, size, targeted_player, is_host):
+    def __init__(self, x: int, y: int, size: str, targeted_player: Union[Player, Teammate], is_host: bool) -> None:
         self.__width = ENTITY_INFO[size][0]
         self.__height = ENTITY_INFO[size][1]
         self.is_host = is_host
@@ -264,13 +264,15 @@ class Enemy(pygame.Surface):
         :return: List of the cells to get to the destination
         """
         # Columns and rows set to 0 because they are reassigned when the maze file is read
-        a = list(reversed(AStar(0, 0).solve((start_y, start_x), (end_y, end_x))[0]))
+        a = list(reversed(AStar(0, 0).solve_cpp((start_x, start_y), (end_x, end_y))))
+        # a = list(reversed(AStar(0, 0).solve((start_y, start_x), (end_y, end_x))[0]))
 
         # Reverse keys and values
         cell_table = {v: k for k, v in cell_table.items()}
 
         # Get the acc cell positions of path
-        return [cell_table[(a[i].x, a[i].y)] for i in range(0, len(a), 2)]
+        # return [cell_table[(a[i].x, a[i].y)] for i in range(0, len(a), 2)]
+        return [cell_table[(a[i][0], a[i][1])] for i in range(0, len(a), 2)]
 
     def __find_path(self, start_x: int, start_y: int, end_x: int, end_y: int, cell_table: dict) -> Optional[Tuple[int, int]]:
         """
@@ -324,7 +326,7 @@ class Enemy(pygame.Surface):
         """
         self.fill((0, 0, 0, 0))
         self.__board = board
-        if self.is_host:
+        if self.is_host and 1 == 2:  # TODO: REMOVE 1 == 2 AFTER TESTING
             if self.__size != "large":
                 mv_info = self.__find_path(*cur_pos, *player_pos, cell_table)
 
@@ -360,7 +362,7 @@ class Enemy(pygame.Surface):
 
 
 class LargeEnemy(Enemy):
-    def __init__(self, x, y, targeted_player, is_host):
+    def __init__(self, x: int, y: int, targeted_player: Union[Player, Teammate], is_host: bool) -> None:
         super().__init__(x, y, "large", targeted_player, is_host)
         self.l_enemy_pos = []
         self.spawned_enemies = []
@@ -401,7 +403,7 @@ class LargeEnemy(Enemy):
 
 
 class SmallEnemy(Enemy):
-    def __init__(self, x, y, targeted_player, is_host, origin=0):
+    def __init__(self, x: int, y: int, targeted_player: Union[Player, Teammate], is_host: bool, origin: int=0) -> None:
         super().__init__(x, y, "small", targeted_player, is_host)
         self.__speed = 10
         self.origin = origin
@@ -417,7 +419,7 @@ class SmallEnemy(Enemy):
 
 
 class MediumEnemy(Enemy):
-    def __init__(self, x, y, targeted_player, is_host):
+    def __init__(self, x: int, y: int, targeted_player: Union[Player, Teammate], is_host: bool) -> None:
         super().__init__(x, y, "medium", targeted_player, is_host)
         self.__speed = 4
         self.bullets = []

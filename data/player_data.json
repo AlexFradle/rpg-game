@@ -11,7 +11,7 @@
             "sword",
             "lightning",
             "fire",
-            null
+            "health_potion"
         ],
         "inventory": [
             "axe",
@@ -33,7 +33,7 @@
             "basic_chest",
             "basic_legs",
             "basic_feet",
-            "health_potion"
+            null
         ],
         "attributes": {
             "health": 6,
@@ -201,6 +201,6 @@
         "xp": 0,
         "unused_sp": 0,
         "coins": 0,
-        "class": "archer"
+        "class": "warrior"
     }
 }

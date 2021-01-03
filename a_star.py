@@ -1,4 +1,5 @@
 from random import randint
+from ctypes import CDLL, c_int, py_object
 
 
 class Vertex:
@@ -33,6 +34,9 @@ class AStar:
         self.closed_set = []  # Checked vertices
         self.is_maze = is_maze
         self.from_file = from_file
+        self.__a_star_cpp = CDLL("data/a_star.dll")
+        self.__a_star_cpp.get_path.argtypes = [c_int, c_int, c_int, c_int]
+        self.__a_star_cpp.get_path.restype = py_object
         if from_file:
             self.grid = self.load_from_file(is_maze)
         else:
@@ -143,11 +147,25 @@ class AStar:
                     neighbour.f = neighbour.g + neighbour.h
                     neighbour.previous = current
 
+    def solve_cpp(self, start: tuple, end: tuple) -> list:
+        """
+        The C++ implementation of A*
+        :param start: Start coords
+        :param end: End coords
+        :return: List of coords: [(int x, int y), ...]
+        """
+        path = self.__a_star_cpp.get_path(int(start[0]), int(start[1]), int(end[0]), int(end[1]))
+        return path
+
 
 if __name__ == '__main__':
-    m = AStar(20, 20, False)
-    solved = m.solve()[0]
-    solved = [(i.x, i.y) for i in solved]
-    a = "\n".join([" ".join(["O" if (j, i) in solved else ("#" if m.grid[i][j].wall else " ") for j in range(m.cols)]) for i in range(m.rows)])
-    with open("a_star.txt", "w") as f:
-        f.write(a)
+    # m = AStar(20, 20, False)
+    # solved = m.solve()[0]
+    # solved = [(i.x, i.y) for i in solved]
+    # a = "\n".join([" ".join(["O" if (j, i) in solved else ("#" if m.grid[i][j].wall else " ") for j in range(m.cols)]) for i in range(m.rows)])
+    # with open("a_star.txt", "w") as f:
+    #     f.write(a)
+    a_str = AStar(0, 0).solve()
+    a_str_c = AStar(0, 0).solve_cpp((1, 1), (9, 9))
+    for a, b in zip(a_str[0], a_str_c):
+        print(f"({a.x}, {a.y})  -   ({b[0]}, {b[1]})")
