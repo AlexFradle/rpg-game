@@ -30,7 +30,7 @@ double * get_x(int *control_x, int num_of_control){
 double * get_y(int *control_y, int num_of_control){
     int n = num_of_control;
 
-    static double y_points[1000];
+    static double y_points[NUMBER_OF_POINTS];
     for(int t = 0; t < NUMBER_OF_POINTS; t++){
         y_points[t] = B(control_y, 0, n - 1, ((double)t)/((double)NUMBER_OF_POINTS));
     }

@@ -10,20 +10,32 @@ from os.path import isfile, join, isdir
 class DataLoader:
     """Used to handle files"""
     player_name = ""
-    rarities = json.load(open(RARITIES_PATH))["rarities"]
-    possible_items = json.load(open(ITEMS_PATH))
-    loot_table = json.load(open(LOOT_TABLE_PATH))
-    tree_root = ElementTree.parse(SKILL_TREE_PATH).getroot()
-    all_player_data = json.load(open(PLAYER_DATA_PATH))
-    game_level = 1
-    host_name = None
-    player_data = None
-    __funcs = None
+    try:
+        rarities = json.load(open(RARITIES_PATH))["rarities"]
+        possible_items = json.load(open(ITEMS_PATH))
+        loot_table = json.load(open(LOOT_TABLE_PATH))
+        tree_root = ElementTree.parse(SKILL_TREE_PATH).getroot()
+        all_player_data = json.load(open(PLAYER_DATA_PATH))
+        game_level = 1
+        host_name = None
+        player_data = None
+        __funcs = None
+    except Exception as e:
+        print("----------Error----------")
+        print(f"{type(e).__name__}: {e}")
+        exit()
 
     def __init__(self) -> None:
         DataLoader.player_data = json.load(open(PLAYER_DATA_PATH))[DataLoader.player_name]
         DataLoader.__funcs = {i[0]: i[1] for i in inspect.getmembers(self, inspect.ismethod) if not i[0].startswith("__")}
         self.__resize_images()
+
+        # Check if files exist
+        for path in [MAZE_PATH, A_STAR_PATH, BEZIER_PATH]:
+            if not isfile(path):
+                print("----------Error----------")
+                print(f"FileNotFoundError: No such file or directory: {path}")
+                exit()
 
     @staticmethod
     def store_maze(maze: str) -> None:
@@ -32,7 +44,7 @@ class DataLoader:
         :param maze: maze formatted from 2d list to str
         :return: None
         """
-        with open("data/maze.txt", "w") as f:
+        with open(MAZE_PATH, "w") as f:
             f.write(maze)
 
     @staticmethod
@@ -101,28 +113,40 @@ class DataLoader:
         if not isdir(new_path):
             mkdir(new_path)
 
-            for size, folders in ASSET_DIRECTORY_SIZES.items():
-                for folder_from in folders:
-                    files = [f for f in listdir(BASE_PATH + folder_from) if isfile(join(BASE_PATH + folder_from, f))]
+        current_files = [f for f in listdir(new_path) if isfile(join(new_path, f))]
 
-                    if isinstance(size, int):
-                        height = int((WINDOW_HEIGHT / 720) * size)
-                        width = height
-                        for file in files:
+        for size, folders in ASSET_DIRECTORY_SIZES.items():
+            for folder_from in folders:
+                files = [f for f in listdir(BASE_PATH + folder_from) if isfile(join(BASE_PATH + folder_from, f))]
+
+                if isinstance(size, int):
+                    height = int((WINDOW_HEIGHT / 720) * size)
+                    width = height
+                    for file in files:
+                        if file not in current_files:
                             im = Image.open(BASE_PATH + folder_from + file)
                             resized = im.resize((width, height))
                             resized.save(new_path + file)
                             print(f"Saved {file}")
 
-                    # Entities dont get resized
-                    elif size == "DONT_RESIZE":
-                        for file in files:
+                # Entities dont get resized
+                elif size == "DONT_RESIZE":
+                    for file in files:
+                        if file not in current_files:
                             im = Image.open(BASE_PATH + folder_from + file)
                             im.save(new_path + file)
                             print(f"Saved {file}")
 
-                    elif size == "DONT_RESIZE OR MOVE":
-                        print(f"{file} ignored")
+                elif size == "DONT_RESIZE OR MOVE":
+                    pass
+
+        # Check all items have images
+        for item_name, values in DataLoader.possible_items.items():
+            if values["item_type"] != "enemy_weapon":
+                if item_name + ".png" not in current_files:
+                    print("----------Error----------")
+                    print(f"FileNotFoundError: {item_name} has no image")
+                    exit()
 
     @staticmethod
     def get_next_open_inv_slot() -> int:

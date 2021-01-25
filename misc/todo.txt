@@ -78,3 +78,247 @@ SCREENSHOTS:
 - Inventory screen with both equipment and attributes
 - Skill tree screen
 - Pause menu
+
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE B(contPoints, i, j, t)
+    IF j = 0 THEN
+        RETURN contPoints[i]
+    ELSE
+        RETURN B(contPoints, i, j-1, t) * (1-t) + B(contPoints, i+1, j-1, t) * t
+    ENDIF
+ENDSUBROUTINE
+
+
+SUBROUTINE getPoints(controlPointsX, controlPointsY, numberOfPoints)
+    points <- []
+    FOR t <- 0 TO numberOfPoints
+        coord <- []
+        x <- B(controlPointsX, 0, LEN(controlPointsX) - 1, t / numberOfPoints)
+        y <- B(controlPointsY, 0, LEN(controlPointsY) - 1, t / numberOfPoints)
+        coord.append(x)
+        coord.append(y)
+        points.append(coord)
+    ENDFOR
+    RETURN points
+ENDSUBROUTINE
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE colourLerp(startCol, endCol, numOfColours)
+    gradient <- []
+    FOR i <- 0 TO numOfColours + 1
+        colour <- []
+        t <- i / numOfColours
+
+        r <- startCol[0] + (t * (endCol[0] - startCol[0]))
+        colour.append(r)
+
+        g <- startCol[1] + (t * (endCol[1] - startCol[1]))
+        colour.append(g)
+
+        b <- startCol[2] + (t * (endCol[2] - startCol[2]))
+        colour.append(b)
+
+        gradient.append(colour)
+    ENDFOR
+    RETURN gradient
+ENDSUBROUTINE
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE preOrder(parent, route)
+    FOR child IN parent.children
+        IF child NOT IN route
+            route.append(child)
+            preOrder(child, route)
+        ENDIF
+    ENDFOR
+    IF parent = route[0]
+        RETURN route
+    ENDIF
+ENDSUBROUTINE
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+CLASS Vertex
+    PUBLIC x
+    PUBLIC y
+    PUBLIC f
+    PUBLIC g
+    PUBLIC h
+    PUBLIC neighbours
+    PUBLIC previous
+    PUBLIC wall
+
+    PUBLIC SUBROUTINE addNeighbours(grid)
+        IF y < LEN(grid) THEN
+            neighbours.append(grid[y + 1][x])
+        ELSE IF y > 0 THEN
+            neighbours.append(grid[y - 1][x])
+        ELSE IF x < LEN(grid[0]) - 1 THEN
+            neighbours.append(grid[y][x + 1])
+        ELSE IF x > 0 THEN
+            neighbours.append(grid[y][x - 1])
+        ENDIF
+    ENDSUBROUTINE
+
+    PUBLIC SUBROUTINE Vertex(x_pos, y_pos, is_wall)  # Constructor
+        x <- x_pos
+        y <- y_pos
+        wall <- is_wall
+        f <- 0
+        g <- 0
+        h <- 0
+        neighbours <- []
+    ENDSUBROUTINE
+ENDCLASS
+
+
+SUBROUTINE heuristic(a, b)
+    dist <- ABS(a.x - b.x) + ABS(a.y - b.y)
+    RETURN dist
+ENDSUBROUTINE
+
+
+SUBROUTINE AStar(grid, start, end)
+    FOR row IN grid
+        FOR v IN row
+            v.addNeighbours(grid)
+    ENDFOR
+    openSet <- []
+    closedSet <- []
+    openSet.append(start)
+    WHILE LEN(openSet) > 0
+        smallest <- 0
+        FOR i <- 0 TO LEN(openSet)
+            IF openSet[i].f < openSet[smallest].f THEN
+                smallest <- i
+            ENDIF
+        ENDFOR
+        path <- []
+        current <- openSet[smallest]
+        temp <- current
+        IF current = end THEN
+            path.append(temp)
+            WHILE temp.previous
+                path.append(temp.previous)
+                temp <- temp.previous
+            ENDWHILE
+            RETURN path
+        ENDIF
+        openSet.remove(current)
+        closedSet.append(current)
+        neighbours <- current.neighbours
+        FOR neighbour IN neighbours
+            IF neighbour NOT IN closedSet AND NOT neighbour.wall THEN
+                tempG <- current.g + 1
+                IF neighbour IN openSet THEN
+                    IF tempG < neighbour.g THEN
+                        neighbour.g <- tempG
+                    ENDIF
+                ELSE
+                    neighbour.g <- tempG
+                    openSet.append(neighbour)
+                ENDIF
+                neighbour.h <- heuristic(neighbour, end)
+                neighbour.f <- neighbour.g + neighbour,h
+                neighbour.previous <- current
+            ENDIF
+        ENDFOR
+    ENDWHILE
+ENDSUBROUTINE
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE getAdjacentWalls(grid, cell)
+    adjWalls <- [
+        [cell[0] + 1, cell[1]],
+        [cell[0] - 1, cell[1]],
+        [cell[0], cell[1] + 1],
+        [cell[0], cell[1] - 1]
+    ]
+    FOR i <- 0 TO 3
+        IF grid[adjWalls[i][1]][adjWalls[i][0]] != " " THEN
+            IF NOT ((0 < adjWalls[i][0] < LEN(grid[0]) - 1) AND (0 < adjWalls[i][1] < LEN(grid) - 1)) THEN
+                adjWalls.remove(adjWalls[i])
+            ENDIF
+        ENDIF
+    ENDFOR
+    RETURN adjWalls
+ENDSUBROUTINE
+
+
+SUBROUTINE randomisedPrims(grid, startPos)
+    grid[startPos[1]][startPos[0]] <- "X"
+    walls <- []
+    FOR wall IN getAdjacentWalls(startPos)
+        walls.append(wall)
+    ENDFOR
+    WHILE LEN(walls) > 0
+        wall <- random.choice(walls)
+        leftCell <- grid[wall[1]][wall[0] - 1]
+        rightCell <- grid[wall[1]][wall[0] + 1]
+        bottomCell <- grid[wall[1] - 1][wall[0]]
+        topCell <- grid[wall[1] + 1][wall[0]]
+
+        IF (leftCell = "O") XOR (rightCell = "O") THEN
+            IF leftCell = "O" THEN
+                cell <- [wall[0] - 1, wall[1]]
+                grid[wall[1]][wall[0] - 1] <- "X"
+            ELSE IF rightCell = "O" THEN
+                cell <- [wall[0] + 1, wall[1]]
+                grid[wall[1]][wall[0] + 1] <- "X"
+            ENDIF
+            gird[wall[1]][wall[0]] <- " "
+            FOR wall IN getAdjacentWalls(cell)
+                walls.append(wall)
+            ENDFOR
+        ENDIF
+
+        IF (bottomCell = "O") XOR (topCell = "O") THEN
+            IF bottomCell = "O" THEN
+                cell <- [wall[0], wall[1] - 1]
+                grid[wall[1] - 1][wall[0]] <- "X"
+            ELSE IF topCell = "O" THEN
+                cell <- [wall[0], wall[1] + 1]
+                grid[wall[1] + 1][wall[0]] <- "X"
+            ENDIF
+            gird[wall[1]][wall[0]] <- " "
+            FOR wall IN getAdjacentWalls(cell)
+                walls.append(wall)
+            ENDFOR
+        ENDIF
+        walls.remove(wall)
+    ENDWHILE
+    maze <- ""
+    FOR row IN grid
+        txtRow <- ""
+        FOR character in row
+            txtRow <- txtRow + character
+        ENDFOR
+        txtRow <- txtRow + "\n"
+        maze <- maze + txtRow
+    ENDFOR
+    textFile <- OPEN("maze.txt", "w")
+    textFile.write(maze)
+    textFile.close()
+ENDSUBROUTINE
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+
++----------------+------------+--------------+
+|Section Name    |Max marks   |Expected marks|
++----------------+------------+--------------+
+|Analysis        |9           |4-6           |
++----------------+------------+--------------+
+|Design          |12          |10-12         |
++----------------+------------+--------------+
+|TS_completeness |15          |15            |
++----------------+------------+--------------+
+|TS_techniques   |27          |23-27         |
++----------------+------------+--------------+
+|Testing         |8           |              |
++----------------+------------+--------------+
+|Evaluation      |4           |              |
++----------------+------------+--------------+
+
+                 +------------+--------------+
+                 |75          |              |
+                 +------------+--------------+

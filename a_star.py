@@ -1,14 +1,43 @@
 from random import randint
 from ctypes import CDLL, c_int, py_object
+from constants import A_STAR_PATH
+
+
+class PriorityQueue:
+    def __init__(self):
+        self.__items = []
+
+    def __contains__(self, item):
+        if item in self.__items:
+            return True
+        return False
+
+    def __len__(self):
+        return len(self.__items)
+
+    def enqueue(self, item):
+        self.__items.insert(0, item)
+        self.__reorder()
+
+    def dequeue(self):
+        return self.__items.pop(0)
+
+    def change_priority(self, item, new_f):
+        ind = self.__items.index(item)
+        self.__items[ind].f = new_f
+        self.__reorder()
+
+    def __reorder(self):
+        self.__items.sort(key=lambda x: x.f)
 
 
 class Vertex:
     def __init__(self, x: int, y: int, wall: bool) -> None:
         self.x = x
         self.y = y
-        self.f = 0  # Total cost
-        self.g = 0  # Distance from start vertex
-        self.h = 0  # Determines shortest distance to end vertex (heuristic)
+        self.f = float("inf")  # Total cost
+        self.g = float("inf")  # Distance from start vertex
+        self.h = None  # Determines shortest distance to end vertex (heuristic)
         self.neighbours = []
         self.previous = None
         # self.wall = True if randint(1, 100) < 20 else False
@@ -30,11 +59,11 @@ class AStar:
     def __init__(self, cols: int, rows: int, from_file: bool=True, is_maze: bool=True) -> None:
         self.cols = cols
         self.rows = rows
-        self.open_set = []  # Unchecked vertices
+        self.open_set = PriorityQueue()  # Unchecked vertices
         self.closed_set = []  # Checked vertices
         self.is_maze = is_maze
         self.from_file = from_file
-        self.__a_star_cpp = CDLL("data/a_star.dll")
+        self.__a_star_cpp = CDLL(A_STAR_PATH)
         self.__a_star_cpp.get_path.argtypes = [c_int, c_int, c_int, c_int]
         self.__a_star_cpp.get_path.restype = py_object
         if from_file:
@@ -101,18 +130,13 @@ class AStar:
                     end_pos = maze[i].find("e")
                     end = self.grid[i][end_pos]
 
-        self.open_set.append(start)
+        self.open_set.enqueue(start)
 
         # While all vertices haven't been checked
-        while self.open_set:
-            smallest = 0
-            for i in range(len(self.open_set)):
-                if self.open_set[i].f < self.open_set[smallest].f:
-                    smallest = i
-
+        while len(self.open_set) > 0:
             # Get current path using the vertices' parent vertex
             path = []
-            current = self.open_set[smallest]
+            current = self.open_set.dequeue()
             temp = current
 
             # If current vertex is the end vertex then finish
@@ -125,7 +149,6 @@ class AStar:
                 return path, self.closed_set
 
             # Remove current vertex from open and add it to closed
-            self.open_set.remove(current)
             self.closed_set.append(current)
 
             # Check neighbours for possible routes
@@ -140,7 +163,7 @@ class AStar:
                             neighbour.g = temp_g
                     else:
                         neighbour.g = temp_g
-                        self.open_set.append(neighbour)
+                        self.open_set.enqueue(neighbour)
 
                     # Assigning neighbour h and f values
                     neighbour.h = self.heuristic(neighbour, end)
@@ -166,6 +189,9 @@ if __name__ == '__main__':
     # with open("a_star.txt", "w") as f:
     #     f.write(a)
     a_str = AStar(0, 0).solve()
-    a_str_c = AStar(0, 0).solve_cpp((1, 1), (9, 9))
-    for a, b in zip(a_str[0], a_str_c):
-        print(f"({a.x}, {a.y})  -   ({b[0]}, {b[1]})")
+    for i in a_str[0]:
+        print(i.x, i.y)
+    # a_str_c = AStar(0, 0).solve_cpp((1, 1), (9, 9))
+    # for i in a_str_c:
+    #     print(i)
+

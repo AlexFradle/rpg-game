@@ -136,6 +136,14 @@ ITEMS_PATH = "data/items.json"
 PLAYER_DATA_PATH = "data/player_data.json"
 SKILL_TREE_PATH = "data/skill_tree.xml"
 LOOT_TABLE_PATH = "data/loot_table.json"
+A_STAR_PATH = "data/a_star.dll"
+BEZIER_PATH = "data/bezier.dll"
+
+REQUIRED_PYTHON_FILES = [
+    "a_star.py", "board.py", "constants.py", "data_loader.py", "entities.py",
+    "gns.py", "help.html", "items.py", "main.py", "maze_creator.py", "network.py",
+    "ui.py", "utils.py"
+]
 
 # Player class names
 CLASS_NAMES = ["mage", "warrior", "archer", "looter"]

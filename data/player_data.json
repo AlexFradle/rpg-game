@@ -36,9 +36,9 @@
             null
         ],
         "attributes": {
-            "health": 6,
-            "mana": 7,
-            "strength": 8,
+            "health": 7,
+            "mana": 6,
+            "strength": 19,
             "defense": 5
         },
         "skills": {
@@ -51,8 +51,8 @@
             "fire_knife": 1
         },
         "level": 7,
-        "xp": 444,
-        "unused_sp": 11,
+        "xp": 631,
+        "unused_sp": 0,
         "coins": 200,
         "class": "mage"
     },

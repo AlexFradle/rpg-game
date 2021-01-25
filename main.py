@@ -1,4 +1,25 @@
-import pygame
+from os import environ, getcwd
+from os.path import isfile
+
+for file in [
+    "a_star.py", "board.py", "constants.py", "data_loader.py", "entities.py",
+    "gns.py", "help.html", "items.py", "main.py", "maze_creator.py", "network.py",
+    "ui.py", "utils.py"
+]:
+    if not isfile(getcwd().replace("\\", "/") + "/" + file):
+        print("----------Error----------")
+        print(f"FileNotFoundError: {file} doesn't exist")
+        exit()
+
+try:
+    import pygame
+    from PIL import Image
+    from numpy.ctypeslib import ndpointer
+except Exception as e:
+    print("----------Error----------")
+    print(f"{type(e).__name__}: {e}")
+    exit()
+
 from ui import Hotbar, Inventory, Inspector, Equipment, Attributes, Tab, HealthBar, ManaBar, XPBar, SkillTree, \
     ItemDropDisplay, Menu, SelectMenu, CharacterCreator, MessageBox
 from board import Board
@@ -12,7 +33,6 @@ from random import randint
 from utils import line_collide
 from items import ItemDrop
 from network import GameServer, GameClient
-from os import environ
 import socket
 import json
 import subprocess
@@ -42,22 +62,22 @@ class Display(pygame.Surface):
         self.maze.create((0, 0))
 
         self.start_menu = Menu((WINDOW_WIDTH - (SELECT_MENU_WIDTH + MENU_WIDTH)) // 2, WINDOW_HEIGHT - MENU_HEIGHT, [
-            ("Singleplayer", lambda: exec("start_single_game = True", globals())),
-            ("Join Game", lambda: exec("join_multiplayer_pressed = True", globals())),
-            ("Create Game", lambda: exec("start_multiplayer_game = True", globals())),
-            ("Create Character", lambda: exec("create_character = True; start_screen = False", globals())),
-            ("Quit", lambda: exec("game_on = False", globals()))
+            ("Singleplayer", lambda: exec("TitleScreen.start_single_game = True", globals())),
+            ("Join Game", lambda: exec("TitleScreen.join_multiplayer_pressed = True", globals())),
+            ("Create Game", lambda: exec("TitleScreen.start_multiplayer_game = True", globals())),
+            ("Create Character", lambda: exec("TitleScreen.create_character = True; TitleScreen.start_screen = False", globals())),
+            ("Quit", lambda: exec("TitleScreen.game_on = False", globals()))
         ])
         self.pause_menu = Menu(WINDOW_WIDTH // 2 - (MENU_WIDTH // 2), WINDOW_HEIGHT // 2 - (MENU_HEIGHT // 2), [
-            ("Resume", lambda: exec("game.show_menu = False", globals())),
+            ("Resume", lambda: exec("TitleScreen.game.show_menu = False", globals())),
             ("Help", lambda: exec("")),
             ("Quit", lambda: exec(
-                "game.running = False;"
-                "start_single_game = False;"
-                "start_multiplayer_game = False;"
-                "join_multiplayer_game = False;"
-                "join_multiplayer_pressed = False;"
-                "start_screen = True",
+                "TitleScreen.game.running = False;"
+                "TitleScreen.start_single_game = False;"
+                "TitleScreen.start_multiplayer_game = False;"
+                "TitleScreen.join_multiplayer_game = False;"
+                "TitleScreen.join_multiplayer_pressed = False;"
+                "TitleScreen.start_screen = True",
                 globals()
             ))
         ])
@@ -75,7 +95,7 @@ class Display(pygame.Surface):
         return SelectMenu(((WINDOW_WIDTH - (SELECT_MENU_WIDTH + MENU_WIDTH)) // 2) + MENU_WIDTH, WINDOW_HEIGHT - MENU_HEIGHT, [
             (
                 (name, DataLoader.all_player_data[name]["class"], "lvl " + str(DataLoader.all_player_data[name]["level"])),
-                lambda a: exec(f"character_selected = '{a}';", globals())
+                lambda a: exec(f"TitleScreen.character_selected = '{a}';", globals())
             ) for name in DataLoader.all_player_data
         ])
 
@@ -379,6 +399,8 @@ class Game:
                             inv_collide_data = self.inv_collide(self.inv, *pygame.mouse.get_pos())
                             if inv_collide_data is not None:
                                 pos, space = inv_collide_data
+                                # TODO: Add this if in after testing to stop moving armor to hotbar
+                                # if DataLoader.possible_items[space[0][1]]["item_type"] not in ["armor", "consumable"]:
                                 DataLoader.change_file("remove_from_hotbar", self.num_pos[event.key] - 1)
                                 DataLoader.change_file("add_to_hotbar", space[0][1], self.num_pos[event.key] - 1)
                                 DataLoader.change_file("remove_from_inv", pos)
@@ -521,7 +543,7 @@ class Game:
                             self.player.x + mv_amount, self.player.y, self.player.width, self.player.height
                         )
                         if (self.board.door_collide(player_rect) == "not on door" and not self.board.wall_collide(player_rect)) or self.board.door_collide(player_rect) == "door open":
-                            if pygame.Rect(self.board.x - mv_amount, self.board.y, self.board.width, self.board.height).contains(display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
+                            if pygame.Rect(self.board.x - mv_amount, self.board.y, self.board.width, self.board.height).contains(self.display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
                                 self.board.x -= mv_amount
                                 for enemy in self.enemies.values():
                                     enemy.x -= mv_amount
@@ -532,7 +554,7 @@ class Game:
                             self.player.x - mv_amount, self.player.y, self.player.width, self.player.height
                         )
                         if (self.board.door_collide(player_rect) == "not on door" and not self.board.wall_collide(player_rect)) or self.board.door_collide(player_rect) == "door open":
-                            if pygame.Rect(self.board.x + mv_amount, self.board.y, self.board.width, self.board.height).contains(display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
+                            if pygame.Rect(self.board.x + mv_amount, self.board.y, self.board.width, self.board.height).contains(self.display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
                                 self.board.x += mv_amount
                                 for enemy in self.enemies.values():
                                     enemy.x += mv_amount
@@ -543,7 +565,7 @@ class Game:
                             self.player.x, self.player.y - mv_amount, self.player.width, self.player.height
                         )
                         if (self.board.door_collide(player_rect) == "not on door" and not self.board.wall_collide(player_rect)) or self.board.door_collide(player_rect) == "door open":
-                            if pygame.Rect(self.board.x, self.board.y + mv_amount, self.board.width, self.board.height).contains(display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
+                            if pygame.Rect(self.board.x, self.board.y + mv_amount, self.board.width, self.board.height).contains(self.display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
                                 self.board.y += mv_amount
                                 for enemy in self.enemies.values():
                                     enemy.y += mv_amount
@@ -554,7 +576,7 @@ class Game:
                             self.player.x, self.player.y + mv_amount, self.player.width, self.player.height
                         )
                         if (self.board.door_collide(player_rect) == "not on door" and not self.board.wall_collide(player_rect)) or self.board.door_collide(player_rect) == "door open":
-                            if pygame.Rect(self.board.x, self.board.y - mv_amount, self.board.width, self.board.height).contains(display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
+                            if pygame.Rect(self.board.x, self.board.y - mv_amount, self.board.width, self.board.height).contains(self.display.get_rect()) and mid_screen.collidepoint(self.player.x, self.player.y):
                                 self.board.y -= mv_amount
                                 for enemy in self.enemies.values():
                                     enemy.y -= mv_amount
@@ -927,7 +949,7 @@ class Game:
             self.display.blit(lives_txt, (WINDOW_WIDTH - lives_txt_dims[0], lives_txt_dims[1] * 2))
 
             # Draw display to window
-            window.blit(display, (0, 0))
+            window.blit(self.display, (0, 0))
 
             # Update whole screen
             pygame.display.update()
@@ -947,171 +969,194 @@ class Game:
         if not self.is_host and not self.is_singleplayer:
             self.client.sock.close()
 
+        pygame.image.save(self.board, "board_print.png")
 
-display = Display(width, height)
-game = None
-multiplayer_game_menu = None
-game_on = True
-start_single_game = False
-start_screen = True
-join_multiplayer_pressed = False
-loaded_servers = False
-svr_addr = ""
-start_multiplayer_game = False
-join_multiplayer_game = False
-create_character = False
-character_selected = None
-start_menu_font = pygame.font.SysFont("Courier", 15, True)
-title_font = pygame.font.SysFont("Courier", 50, True)
-title_text = title_font.render(GAME_TITLE, True, TEXT_COLOUR)
-title_size = title_font.size(GAME_TITLE)
-select_menu_font = pygame.font.SysFont("Courier", 20, True)
-while game_on:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            game_on = False
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                join_multiplayer_pressed = False
-                start_screen = True
-                loaded_servers = False
-                create_character = False
+class TitleScreen:
+    display = Display(width, height)
+    game = None
+    multiplayer_game_menu = None
+    game_on = True
+    start_single_game = False
+    start_screen = True
+    join_multiplayer_pressed = False
+    loaded_servers = False
+    svr_addr = ""
+    start_multiplayer_game = False
+    join_multiplayer_game = False
+    create_character = False
+    character_selected = None
+    start_menu_font = pygame.font.SysFont("Courier", 15, True)
+    title_font = pygame.font.SysFont("Courier", 50, True)
+    title_text = title_font.render(GAME_TITLE, True, TEXT_COLOUR)
+    title_size = title_font.size(GAME_TITLE)
+    select_menu_font = pygame.font.SysFont("Courier", 20, True)
 
-            if event.key == pygame.K_LEFT:
-                if join_multiplayer_pressed:
-                    multiplayer_game_menu.current_page -= 1
+    @classmethod
+    def run_game(cls):
+        while cls.game_on:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    cls.game_on = False
 
-            if event.key == pygame.K_RIGHT:
-                if join_multiplayer_pressed:
-                    multiplayer_game_menu.current_page += 1
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        cls.join_multiplayer_pressed = False
+                        cls.start_screen = True
+                        cls.loaded_servers = False
+                        cls.create_character = False
 
-            if event.key == pygame.K_BACKSPACE:
-                if create_character:
-                    display.character_create_menu.remove_char()
+                    if event.key == pygame.K_LEFT:
+                        if cls.join_multiplayer_pressed:
+                            cls.multiplayer_game_menu.current_page -= 1
 
-            if create_character:
-                for asc, pressed in enumerate(pygame.key.get_pressed()):
-                    if pressed and chr(asc).lower() in ascii_letters:
-                        display.character_create_menu.add_char(chr(asc))
-                        break
+                    if event.key == pygame.K_RIGHT:
+                        if cls.join_multiplayer_pressed:
+                            cls.multiplayer_game_menu.current_page += 1
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                if display.message_popup:
-                    if display.popup_box.check_pressed(*pygame.mouse.get_pos()):
-                        display.message_popup = False
+                    if event.key == pygame.K_BACKSPACE:
+                        if cls.create_character:
+                            cls.display.character_create_menu.remove_char()
+
+                    if cls.create_character:
+                        for asc, pressed in enumerate(pygame.key.get_pressed()):
+                            if pressed and chr(asc).lower() in ascii_letters:
+                                cls.display.character_create_menu.add_char(chr(asc))
+                                break
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        if cls.display.message_popup:
+                            if cls.display.popup_box.check_pressed(*pygame.mouse.get_pos()):
+                                cls.display.message_popup = False
+                        else:
+                            if cls.start_screen:
+                                cls.display.start_menu.check_pressed(*pygame.mouse.get_pos())
+                                cls.display.character_menu.check_pressed(*pygame.mouse.get_pos())
+
+                            if cls.join_multiplayer_pressed:
+                                if cls.multiplayer_game_menu is not None:
+                                    cls.multiplayer_game_menu.check_pressed(*pygame.mouse.get_pos())
+
+                            if cls.create_character:
+                                cls.display.character_create_menu.check_pressed(*pygame.mouse.get_pos())
+
+            window.fill(DISPLAY_BACKGROUND)
+
+            if cls.start_screen:
+                cls.display.start_menu.update(cls.start_menu_font, *pygame.mouse.get_pos())
+                window.blit(cls.display.start_menu, (cls.display.start_menu.x, cls.display.start_menu.y))
+                cls.display.character_menu.update(cls.start_menu_font, *pygame.mouse.get_pos(), cls.character_selected)
+                window.blit(cls.display.character_menu, (cls.display.character_menu.x, cls.display.character_menu.y))
+                window.blit(cls.title_text, ((WINDOW_WIDTH // 2) - (cls.title_size[0] // 2), 0))
+                if cls.display.message_popup:
+                    if cls.display.popup_box is not None:
+                        cls.display.popup_box.update(cls.start_menu_font)
+                        window.blit(cls.display.popup_box, (cls.display.popup_box.x, cls.display.popup_box.y))
+
+            if cls.start_single_game:
+                if cls.character_selected is not None:
+                    cls.game = Game(cls.display, True, True, cls.character_selected)
+                    window.blit(cls.display, (0, 0))
+                    cls.game.start()
                 else:
-                    if start_screen:
-                        display.start_menu.check_pressed(*pygame.mouse.get_pos())
-                        display.character_menu.check_pressed(*pygame.mouse.get_pos())
+                    cls.display.popup_box = cls.display.create_message_popup("No character selected")
+                    cls.display.message_popup = True
+                    cls.start_single_game = False
 
-                    if join_multiplayer_pressed:
-                        if multiplayer_game_menu is not None:
-                            multiplayer_game_menu.check_pressed(*pygame.mouse.get_pos())
+            if cls.start_multiplayer_game:
+                if cls.character_selected is not None:
+                    try:
+                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        s.connect((GNS_IP, GNS_PORT))
+                        process = subprocess.run(["ipconfig"], stdout=subprocess.PIPE)
+                        out = process.stdout.decode()
+                        ipv4 = out[out.find("IPv4"):][out[out.find("IPv4"):].find("1"):out[out.find("IPv4"):].find("\r")]
+                        port = randint(GNS_PORT + 1, 55000)
+                        req = {
+                            "request": "HOST ADD",
+                            "payload": {"name": "test game 1", "password": "test password", "address": f"{ipv4}:{port}"}
+                        }
+                        s.send(json.dumps(req).encode())
+                        cls.game = Game(cls.display, True, False, cls.character_selected, server_ip=ipv4, server_port=port)
+                        window.blit(cls.display, (0, 0))
+                        cls.game.start()
+                        del cls.game
+                        req = {
+                            "request": "HOST REMOVE",
+                            "payload": req["payload"]
+                        }
+                        s.send(json.dumps(req).encode())
+                        s.close()
+                    except ConnectionRefusedError:
+                        cls.display.popup_box = cls.display.create_message_popup("The GNS is not online")
+                        cls.display.message_popup = True
+                        cls.start_multiplayer_game = False
+                else:
+                    cls.display.popup_box = cls.display.create_message_popup("No character selected")
+                    cls.display.message_popup = True
+                    cls.start_multiplayer_game = False
 
-                    if create_character:
-                        display.character_create_menu.check_pressed(*pygame.mouse.get_pos())
+            if cls.join_multiplayer_game:
+                if cls.character_selected is not None:
+                    cls.game = Game(cls.display, False, False, cls.character_selected, host_address=cls.svr_addr)
+                    window.blit(cls.display, (0, 0))
+                    cls.game.start()
+                    del cls.game
+                else:
+                    cls.display.popup_box = cls.display.create_message_popup("No character selected")
+                    cls.display.message_popup = True
+                    cls.join_multiplayer_game = False
 
-    window.fill(DISPLAY_BACKGROUND)
-
-    if start_screen:
-        display.start_menu.update(start_menu_font, *pygame.mouse.get_pos())
-        window.blit(display.start_menu, (display.start_menu.x, display.start_menu.y))
-        display.character_menu.update(start_menu_font, *pygame.mouse.get_pos(), character_selected)
-        window.blit(display.character_menu, (display.character_menu.x, display.character_menu.y))
-        window.blit(title_text, ((WINDOW_WIDTH // 2) - (title_size[0] // 2), 0))
-        if display.message_popup:
-            if display.popup_box is not None:
-                display.popup_box.update(start_menu_font)
-                window.blit(display.popup_box, (display.popup_box.x, display.popup_box.y))
-
-    if start_single_game:
-        if character_selected is not None:
-            game = Game(display, True, True, character_selected)
-            window.blit(display, (0, 0))
-            game.start()
-
-    if start_multiplayer_game:
-        if character_selected is not None:
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.connect((GNS_IP, GNS_PORT))
-                process = subprocess.run(["ipconfig"], stdout=subprocess.PIPE)
-                out = process.stdout.decode()
-                ipv4 = out[out.find("IPv4"):][out[out.find("IPv4"):].find("1"):out[out.find("IPv4"):].find("\r")]
-                port = randint(GNS_PORT + 1, 55000)
-                req = {
-                    "request": "HOST ADD",
-                    "payload": {"name": "test game 1", "password": "test password", "address": f"{ipv4}:{port}"}
-                }
-                s.send(json.dumps(req).encode())
-                game = Game(display, True, False, character_selected, server_ip=ipv4, server_port=port)
-                window.blit(display, (0, 0))
-                game.start()
-                del game
-                req = {
-                    "request": "HOST REMOVE",
-                    "payload": req["payload"]
-                }
-                s.send(json.dumps(req).encode())
-                s.close()
-            except ConnectionRefusedError:
-                display.popup_box = display.create_message_popup("The GNS is not online")
-                display.message_popup = True
-                start_multiplayer_game = False
-
-    if join_multiplayer_game:
-        if character_selected is not None:
-            game = Game(display, False, False, character_selected, host_address=svr_addr)
-            window.blit(display, (0, 0))
-            game.start()
-            del game
-
-    if join_multiplayer_pressed:
-        if character_selected is not None:
-            if not loaded_servers:
-                try:
-                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.connect((GNS_IP, GNS_PORT))
-                    req = {"request": "GET ALL SERVERS", "payload": {}}
-                    s.send(json.dumps(req).encode())
-                    data = json.loads(s.recv(2048).decode())
-                    s.close()
-                    if data:
-                        multiplayer_game_menu = SelectMenu(WINDOW_WIDTH // 2 - (SELECT_MENU_WIDTH // 2), WINDOW_HEIGHT // 2 - (SELECT_MENU_HEIGHT // 2), [
-                            (
-                                (i["name"], i["address"]),
-                                lambda: exec(f"svr_addr = '{i['address']}'; join_multiplayer_pressed = False; join_multiplayer_game = True; loaded_servers = False", globals())
-                            ) for i in data
-                        ])
-                        loaded_servers = True
-                        start_screen = False
+            if cls.join_multiplayer_pressed:
+                if cls.character_selected is not None:
+                    if not cls.loaded_servers:
+                        try:
+                            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            s.connect((GNS_IP, GNS_PORT))
+                            req = {"request": "GET ALL SERVERS", "payload": {}}
+                            s.send(json.dumps(req).encode())
+                            data = json.loads(s.recv(2048).decode())
+                            s.close()
+                            if data:
+                                cls.multiplayer_game_menu = SelectMenu(WINDOW_WIDTH // 2 - (SELECT_MENU_WIDTH // 2), WINDOW_HEIGHT // 2 - (SELECT_MENU_HEIGHT // 2), [
+                                    (
+                                        (i["name"], i["address"]),
+                                        lambda: exec(f"TitleScreen.svr_addr = '{i['address']}'; TitleScreen.join_multiplayer_pressed = False; TitleScreen.join_multiplayer_game = True; TitleScreen.loaded_servers = False", globals())
+                                    ) for i in data
+                                ])
+                                cls.loaded_servers = True
+                                cls.start_screen = False
+                            else:
+                                cls.display.popup_box = cls.display.create_message_popup("There are no servers online")
+                                cls.display.message_popup = True
+                                cls.join_multiplayer_pressed = False
+                        except ConnectionRefusedError:
+                            cls.display.popup_box = cls.display.create_message_popup("The GNS is not online")
+                            cls.display.message_popup = True
+                            cls.join_multiplayer_pressed = False
                     else:
-                        display.popup_box = display.create_message_popup("There are no servers online")
-                        display.message_popup = True
-                        join_multiplayer_pressed = False
-                except ConnectionRefusedError:
-                    display.popup_box = display.create_message_popup("The GNS is not online")
-                    display.message_popup = True
-                    join_multiplayer_pressed = False
-            else:
-                window.blit(multiplayer_game_menu, (multiplayer_game_menu.x, multiplayer_game_menu.y))
-                multiplayer_game_menu.update(select_menu_font, *pygame.mouse.get_pos())
+                        window.blit(cls.multiplayer_game_menu, (cls.multiplayer_game_menu.x, cls.multiplayer_game_menu.y))
+                        cls.multiplayer_game_menu.update(cls.select_menu_font, *pygame.mouse.get_pos())
+                else:
+                    cls.display.popup_box = cls.display.create_message_popup("No character selected")
+                    cls.display.message_popup = True
+                    cls.join_multiplayer_pressed = False
 
-    if create_character:
-        if display.character_create_menu.confirm_pressed:
-            DataLoader.create_new_player(display.character_create_menu.name, display.character_create_menu.selected_class)
-            display.character_create_menu = CharacterCreator()
-            display.character_menu = display.refresh_character_menu()
-            create_character = False
-            start_screen = True
+            if cls.create_character:
+                if cls.display.character_create_menu.confirm_pressed:
+                    DataLoader.create_new_player(cls.display.character_create_menu.name, cls.display.character_create_menu.selected_class)
+                    cls.display.character_create_menu = CharacterCreator()
+                    cls.display.character_menu = cls.display.refresh_character_menu()
+                    cls.create_character = False
+                    cls.start_screen = True
 
-        display.character_create_menu.update(start_menu_font, *pygame.mouse.get_pos())
-        window.blit(display.character_create_menu, (display.character_create_menu.x, display.character_create_menu.y))
+                cls.display.character_create_menu.update(cls.start_menu_font, *pygame.mouse.get_pos())
+                window.blit(cls.display.character_create_menu, (cls.display.character_create_menu.x, cls.display.character_create_menu.y))
 
-    pygame.display.update()
-    clock.tick(30)
+            pygame.display.update()
+            clock.tick(30)
 
+
+TitleScreen.run_game()
 pygame.quit()
-

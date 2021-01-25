@@ -650,7 +650,7 @@ class Bezier:
         C implementation of De Casteljau's algorithm
         :return: List of all (x, y) coords
         """
-        bezier = CDLL("data/bezier.dll")
+        bezier = CDLL(BEZIER_PATH)
 
         cx, cy = zip(*self.control_points)
         cx = [int(i) for i in cx]
