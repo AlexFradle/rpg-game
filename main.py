@@ -135,12 +135,13 @@ class Game:
         self.item_drop_display = ItemDropDisplay()
         self.st = SkillTree()
 
+        self.font = pygame.font.SysFont("Courier", 15, True)
+
         # Create entities
-        self.player = Player(name, 1)
+        self.player = Player(name, 1, self.font.render(name, True, TEXT_COLOUR))
         self.enemies = {i: MediumEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190, self.player, self.is_host) for i in range(2)}
 
         # Misc Variables
-        self.font = pygame.font.SysFont("Courier", 15, True)
         self.level_font = pygame.font.SysFont("Courier", 30, True)
         self.running = True
         self.show_inv = False
@@ -322,9 +323,9 @@ class Game:
         then adding the instance to the enemies list
         :return: None
         """
-        for i in range(5 + DataLoader.game_level):
+        for i in range(1 + DataLoader.game_level):
             spawn = choice(self.spawn_points)
-            enemy_type = choice([SmallEnemy, MediumEnemy, LargeEnemy])
+            enemy_type = choice([MediumEnemy, LargeEnemy])
             alive_players = [i for i in [self.player] + list(self.other_players.values()) if i.is_alive]
             new_enemy = enemy_type(spawn[0], spawn[1], choice(alive_players), self.is_host)
             self.enemies[self.next_enemy_index] = new_enemy
@@ -377,6 +378,10 @@ class Game:
                         self.show_menu = not self.show_menu
                         self.show_inv = False
                         self.show_st = False
+
+                    # TODO: remove after testing
+                    elif event.key == pygame.K_x:
+                        DataLoader.change_file("add_xp", 20)
 
                     # Toggles inventory
                     elif event.key == pygame.K_e and not self.show_menu:
@@ -660,7 +665,7 @@ class Game:
                             elif cur_item.get("proj_dist") is not None:
                                 if cur_item.get("mana_used") is not None:
                                     if self.player.mana - cur_item["mana_used"] >= 0:
-                                        # player.mana -= cur_item["mana_used"]
+                                        self.player.mana -= cur_item["mana_used"]
                                         self.bullets[self.player.name][self.next_bullet_index] = Bullet(
                                                 abs(self.board.x) + self.player.x + self.player.width,
                                                 abs(self.board.y) + self.player.y + self.player.height,
@@ -1046,6 +1051,7 @@ class TitleScreen:
             if cls.start_screen:
                 cls.display.start_menu.update(cls.start_menu_font, *pygame.mouse.get_pos())
                 window.blit(cls.display.start_menu, (cls.display.start_menu.x, cls.display.start_menu.y))
+                cls.display.character_menu = cls.display.refresh_character_menu()
                 cls.display.character_menu.update(cls.start_menu_font, *pygame.mouse.get_pos(), cls.character_selected)
                 window.blit(cls.display.character_menu, (cls.display.character_menu.x, cls.display.character_menu.y))
                 window.blit(cls.title_text, ((WINDOW_WIDTH // 2) - (cls.title_size[0] // 2), 0))

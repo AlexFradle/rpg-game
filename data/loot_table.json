@@ -1,9 +1,9 @@
 {
   "small": {
     "drops": {
-      "axe": 2
+      "axe": 10
     },
-    "xp": 1
+    "xp": 5
   },
   "medium": {
     "drops": {
@@ -11,12 +11,13 @@
       "lightning": 25,
       "sword": 2
     },
-    "xp": 10
+    "xp": 20
   },
   "large":{
     "drops":{
-      "gold_chest": 25,
-      "sword": 10
+      "gold_chest": 50,
+      "gold_head": 25,
+      "sword": 20
     },
     "xp": 50
   }

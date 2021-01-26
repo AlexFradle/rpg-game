@@ -56,6 +56,10 @@ class Vertex:
 
 
 class AStar:
+    __a_star_cpp = CDLL(A_STAR_PATH)
+    __a_star_cpp.get_path.argtypes = [c_int, c_int, c_int, c_int]
+    __a_star_cpp.get_path.restype = py_object
+
     def __init__(self, cols: int, rows: int, from_file: bool=True, is_maze: bool=True) -> None:
         self.cols = cols
         self.rows = rows
@@ -63,9 +67,6 @@ class AStar:
         self.closed_set = []  # Checked vertices
         self.is_maze = is_maze
         self.from_file = from_file
-        self.__a_star_cpp = CDLL(A_STAR_PATH)
-        self.__a_star_cpp.get_path.argtypes = [c_int, c_int, c_int, c_int]
-        self.__a_star_cpp.get_path.restype = py_object
         if from_file:
             self.grid = self.load_from_file(is_maze)
         else:
@@ -170,14 +171,15 @@ class AStar:
                     neighbour.f = neighbour.g + neighbour.h
                     neighbour.previous = current
 
-    def solve_cpp(self, start: tuple, end: tuple) -> list:
+    @classmethod
+    def solve_cpp(cls, start: tuple, end: tuple) -> list:
         """
         The C++ implementation of A*
         :param start: Start coords
         :param end: End coords
         :return: List of coords: [(int x, int y), ...]
         """
-        path = self.__a_star_cpp.get_path(int(start[0]), int(start[1]), int(end[0]), int(end[1]))
+        path = cls.__a_star_cpp.get_path(int(start[0]), int(start[1]), int(end[0]), int(end[1]))
         return path
 
 

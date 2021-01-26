@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8"/>
     <title>RPG Game Help</title>
     <style>
         body {
@@ -72,8 +72,6 @@
 <body>
     <h1 class="head-text" id="title">RPG Game Help</h1>
     <div class="content-box">
-        <div class="head-text">Objective</div>
-        <div class="body-text">The player is in a maze</div>
         <div class="head-text">Menu Navigation</div>
         <div class="body-text list">
             <img src="assets/help_page/title_screen.PNG" class="demo"/>
@@ -155,34 +153,26 @@
         </div>
         <div class="head-text">Gameplay</div>
         <div class="body-text list">
-            <div class="subhead-text">Combat and Enemies:</div>
+            <div class="subhead-text">Enemies:</div>
             <ul>
-                <li></li>
+                <li>Small Enemy <img src="assets/entities/small.png"/>: attacks by moving into the player and dealing damage</li>
+                <li>Medium Enemy <img src="assets/entities/medium.png"/>: attacks by shooting bullets at the player</li>
+                <li>Large Enemy <img src="assets/entities/large.png"/>: attacks by causing damage over time</li>
             </ul>
         </div>
         <div class="body-text list">
             <div class="subhead-text">Loot:</div>
             <ul>
-                <li></li>
+                <li>Items are viewed in the inventory</li>
+                <li>Any item dropped by the enemies can be moved over and picked up</li>
             </ul>
         </div>
         <div class="head-text" id="errors">Errors</div>
         <div class="body-text list">
             <div class="subhead-text">"The GNS is not online"</div>
             <ul>
-                <li></li>
-            </ul>
-        </div>
-        <div class="body-text list">
-            <div class="subhead-text">"There are no servers online"</div>
-            <ul>
-                <li></li>
-            </ul>
-        </div>
-        <div class="body-text list">
-            <div class="subhead-text">"Host Disconnected"</div>
-            <ul>
-                <li></li>
+                <li>This means the the Game Name Server is not currently running</li>
+                <li>To fix this run the gns.py file</li>
             </ul>
         </div>
     </div>

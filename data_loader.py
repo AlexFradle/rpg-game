@@ -58,7 +58,7 @@ class DataLoader:
 
         file[name] = {
             "armor": {"head": "basic_head", "chest": "basic_chest", "legs": "basic_legs", "feet": "basic_feet"},
-            "hotbar": ["axe", None, None, None, None],
+            "hotbar": ["axe", "fire", None, None, None],
             "inventory": [None] * 20,
             "attributes": {"health": 1, "mana": 1, "strength": 1, "defense": 1},
             "skills": {},
@@ -102,6 +102,8 @@ class DataLoader:
 
         with open(PLAYER_DATA_PATH, "w") as f:
             json.dump(file, f, indent=4)
+
+        DataLoader.all_player_data = json.load(open(PLAYER_DATA_PATH))
 
     @staticmethod
     def __resize_images() -> None:

@@ -33,7 +33,7 @@
             "basic_chest",
             "basic_legs",
             "basic_feet",
-            null
+            "axe"
         ],
         "attributes": {
             "health": 7,
@@ -50,8 +50,8 @@
             "broken_heart": 1,
             "fire_knife": 1
         },
-        "level": 7,
-        "xp": 631,
+        "level": 8,
+        "xp": 346,
         "unused_sp": 0,
         "coins": 200,
         "class": "mage"
@@ -65,7 +65,7 @@
         },
         "hotbar": [
             "axe",
-            null,
+            "sword",
             null,
             null,
             null
@@ -99,9 +99,9 @@
             "defense": 1
         },
         "skills": {},
-        "level": 1,
-        "xp": 91,
-        "unused_sp": 0,
+        "level": 4,
+        "xp": 0,
+        "unused_sp": 1,
         "coins": 0,
         "class": "mage"
     },
@@ -120,7 +120,7 @@
             null
         ],
         "inventory": [
-            null,
+            "fire",
             null,
             null,
             null,
@@ -148,59 +148,61 @@
             "defense": 1
         },
         "skills": {},
-        "level": 1,
+        "level": 4,
         "xp": 0,
-        "unused_sp": 0,
+        "unused_sp": 1,
         "coins": 0,
         "class": "mage"
     },
-    "test": {
+    "newplayer": {
         "armor": {
             "head": "basic_head",
-            "chest": "basic_chest",
+            "chest": "gold_chest",
             "legs": "basic_legs",
             "feet": "basic_feet"
         },
         "hotbar": [
             "axe",
-            null,
-            null,
+            "fire",
+            "lightning",
             null,
             null
         ],
         "inventory": [
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            "fire",
+            "axe",
+            "lightning",
+            "axe",
+            "axe",
+            "axe",
+            "basic_chest",
+            "lightning",
+            "lightning",
+            "fire",
+            "gold_chest",
+            "fire",
+            "lightning",
+            "lightning",
+            "fire",
+            "lightning",
             null,
             null,
             null,
             null
         ],
         "attributes": {
-            "health": 1,
-            "mana": 1,
+            "health": 3,
+            "mana": 2,
             "strength": 1,
             "defense": 1
         },
-        "skills": {},
-        "level": 1,
-        "xp": 0,
-        "unused_sp": 0,
+        "skills": {
+            "resistance": 1
+        },
+        "level": 5,
+        "xp": 175,
+        "unused_sp": 1,
         "coins": 0,
-        "class": "warrior"
+        "class": "mage"
     }
 }

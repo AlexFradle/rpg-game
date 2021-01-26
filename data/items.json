@@ -10,11 +10,11 @@
   "fire":{
     "rarity": "silver",
     "item_type": "weapon",
-    "damage": 5,
+    "damage": 10,
     "crit_chance": 0.1,
-    "proj_dist": 200,
+    "proj_dist": 300,
     "proj_size": 5,
-    "proj_speed": 10,
+    "proj_speed": 80,
     "mana_used": 3,
     "wall_collision": true,
     "colour": [255, 60, 0]
@@ -22,7 +22,7 @@
   "lightning":{
     "rarity": "gold",
     "item_type": "weapon",
-    "damage": 10,
+    "damage": 15,
     "crit_chance": 0.2,
     "proj_dist": 500,
     "proj_size": 2,
@@ -75,7 +75,7 @@
   "axe":{
     "rarity": "bronze",
     "item_type": "weapon",
-    "damage": 2,
+    "damage": 5,
     "crit_chance": 0.05,
     "melee_dist": 90,
     "melee_speed": 10

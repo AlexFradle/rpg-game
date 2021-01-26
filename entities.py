@@ -17,7 +17,7 @@ from typing import Union, Optional, Tuple, NamedTuple, List
 
 
 class Player(pygame.Surface):
-    def __init__(self, name: str, player_num: int) -> None:
+    def __init__(self, name: str, player_num: int, name_text: pygame.Surface) -> None:
         self.__width = ENTITY_INFO["player"][0]
         self.__height = ENTITY_INFO["player"][1]
         super().__init__((self.__width * 2, self.__height * 2), pygame.SRCALPHA)
@@ -30,12 +30,15 @@ class Player(pygame.Surface):
         self.melee_cooldown = 0
         self.mv_amount = PLAYER_MV_AMOUNT
         self.__damage_cooldown = 0
+        self.__mana_cooldown = 0
+        self.__xp_anmiation_frame = -1
         self.name = name
         self.__player_shell = namedtuple("player_shell", ["x", "y", "name", "degrees", "lives", "is_alive", "circle_stage"])
         self.lives = PLAYER_LIVES
         self.is_alive = True
         self.degrees = 0
         self.circle_stage = 0
+        self.__name_text = name_text
 
     @property
     def width(self):
@@ -56,17 +59,19 @@ class Player(pygame.Surface):
     @health.setter
     def health(self, value):
         # If the new health value < current health then damage has been done
-        if value < self.__health:
+        if -1 < value < self.__health:
             if self.__damage_cooldown <= 0:
                 damage = (self.__health - value) - DataLoader.get_player_defense()
                 self.__health -= damage if damage > 0 else 0
                 self.__damage_cooldown = PLAYER_DAMAGE_COOLDOWN
-        else:
-            self.__health = value
+        elif value < 0:
+            self.__health = 0
 
     @mana.setter
     def mana(self, value):
-        pass
+        if value < self.__mana:
+            self.__mana_cooldown = PLAYER_MANA_COOLDOWN
+        self.__mana = value
 
     def get_normalised_pos(self, board: Board, flag: int=1) -> Union[Tuple[int, int], NamedTuple]:
         """
@@ -82,7 +87,7 @@ class Player(pygame.Surface):
         Resets the players health and mana depending on the players level
         :return: None
         """
-        self.__max_health = (100 * DataLoader.player_data["level"]) + (DataLoader.player_data["attributes"]["health"] * 20)
+        self.__max_health = (50 * DataLoader.player_data["level"]) + (DataLoader.player_data["attributes"]["health"] * 20)
         self.__max_mana = (50 * DataLoader.player_data["level"]) + (DataLoader.player_data["attributes"]["mana"] * 10)
         self.__health = self.__max_health
         self.__mana = self.__max_mana
@@ -95,6 +100,8 @@ class Player(pygame.Surface):
         if DataLoader.player_data["xp"] >= DataLoader.player_data["level"] * 100:
             DataLoader.change_file("reset_xp")
             DataLoader.change_file("add_level")
+            DataLoader.change_file("add_skill_points", 1)
+            self.__xp_anmiation_frame = 0
 
     def update(self, mx: int, my: int) -> None:
         """
@@ -104,16 +111,35 @@ class Player(pygame.Surface):
         :return: None
         """
         self.fill((0, 0, 0, 0))
+
+        # Check if the player has leveled up
+        self.reset_level()
+
+        # Level up animation
+        if self.__xp_anmiation_frame >= 0:
+            pygame.draw.circle(self, XPBAR_BAR, (self.__width, self.__height), self.__xp_anmiation_frame * 2)
+            self.__xp_anmiation_frame += 1
+
+        if self.__xp_anmiation_frame == 21:
+            self.__xp_anmiation_frame = -1
+
         self.degrees = math.degrees(math.atan2((self.x + self.__width) - mx, (self.y + self.__height) - my))
         rotated_img = pygame.transform.rotate(self.__img, self.degrees)
         self.blit(rotated_img, (self.__width // 2, self.__height // 2))
+        self.blit(self.__name_text, (0, 0))
 
         # Damage cooldown
         if self.__damage_cooldown > 0:
             self.__damage_cooldown -= 1
 
-        # Check if the player has leveled up
-        self.reset_level()
+        # Mana cooldown
+        if self.__mana_cooldown > 0:
+            self.__mana_cooldown -= 1
+        elif self.__mana_cooldown == 0:
+            if (self.__mana + MANA_PER_FRAME) < self.__max_mana:
+                self.__mana += MANA_PER_FRAME
+            elif (self.__mana + MANA_PER_FRAME) > self.__max_mana:
+                self.__mana = self.__max_mana
 
 
 class Teammate(pygame.Surface):
@@ -326,7 +352,7 @@ class Enemy(pygame.Surface):
         """
         self.fill((0, 0, 0, 0))
         self.__board = board
-        if self.is_host and 1 == 2:  # TODO: REMOVE 1 == 2 AFTER TESTING
+        if self.is_host:
             if self.__size != "large":
                 mv_info = self.__find_path(*cur_pos, *player_pos, cell_table)
 
@@ -398,7 +424,7 @@ class LargeEnemy(Enemy):
             self.x, self.y = (new_x, new_y) if (new_x, new_y) not in self.l_enemy_pos else (self.x, self.y)
 
             # Spawn small enemy
-            if randint(1, 25) == 25:
+            if randint(1, 50) == 50:
                 self.spawned_enemies.append(SmallEnemy.from_large_enemy(self))
 
 
