@@ -17,7 +17,7 @@ from typing import Union, Optional, Tuple, NamedTuple, List
 
 
 class Player(pygame.Surface):
-    def __init__(self, name: str, player_num: int, name_text: pygame.Surface) -> None:
+    def __init__(self, name: str, player_num: int) -> None:
         self.__width = ENTITY_INFO["player"][0]
         self.__height = ENTITY_INFO["player"][1]
         super().__init__((self.__width * 2, self.__height * 2), pygame.SRCALPHA)
@@ -38,7 +38,6 @@ class Player(pygame.Surface):
         self.is_alive = True
         self.degrees = 0
         self.circle_stage = 0
-        self.__name_text = name_text
 
     @property
     def width(self):
@@ -100,14 +99,15 @@ class Player(pygame.Surface):
         if DataLoader.player_data["xp"] >= DataLoader.player_data["level"] * 100:
             DataLoader.change_file("reset_xp")
             DataLoader.change_file("add_level")
-            DataLoader.change_file("add_skill_points", 1)
+            DataLoader.change_file("increment_sp", 1)
             self.__xp_anmiation_frame = 0
 
-    def update(self, mx: int, my: int) -> None:
+    def update(self, mx: int, my: int, font: pygame.font.Font) -> None:
         """
         Updates the player surface
         :param mx: Mouse x position
         :param my: Mouse y position
+        :param font: Font to render the text with
         :return: None
         """
         self.fill((0, 0, 0, 0))
@@ -126,7 +126,7 @@ class Player(pygame.Surface):
         self.degrees = math.degrees(math.atan2((self.x + self.__width) - mx, (self.y + self.__height) - my))
         rotated_img = pygame.transform.rotate(self.__img, self.degrees)
         self.blit(rotated_img, (self.__width // 2, self.__height // 2))
-        self.blit(self.__name_text, (0, 0))
+        self.blit(font.render(self.name, True, TEXT_COLOUR), (0, 0))
 
         # Damage cooldown
         if self.__damage_cooldown > 0:
@@ -164,7 +164,7 @@ class Teammate(pygame.Surface):
     def height(self):
         return self.__height
 
-    def update(self) -> None:
+    def update(self, font: pygame.font.Font) -> None:
         """
         Updates the teammate surface
         :return: None
@@ -172,6 +172,7 @@ class Teammate(pygame.Surface):
         self.fill((0, 0, 0, 0))
         rotated_img = pygame.transform.rotate(self.__img, self.degrees)
         self.blit(rotated_img, (self.__width // 2, self.__height // 2))
+        self.blit(font.render(self.name, True, TEXT_COLOUR), (0, 0))
 
 
 class Enemy(pygame.Surface):

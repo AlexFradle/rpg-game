@@ -3,7 +3,7 @@ from data_loader import DataLoader
 from itertools import chain
 from constants import *
 from xml.etree.ElementTree import Element
-from typing import Union, Optional
+from typing import Optional
 from time import time
 
 

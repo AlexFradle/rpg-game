@@ -66,7 +66,7 @@
         "hotbar": [
             "axe",
             "sword",
-            null,
+            "fire",
             null,
             null
         ],
@@ -99,8 +99,8 @@
             "defense": 1
         },
         "skills": {},
-        "level": 4,
-        "xp": 0,
+        "level": 2,
+        "xp": 70,
         "unused_sp": 1,
         "coins": 0,
         "class": "mage"
@@ -165,7 +165,7 @@
             "axe",
             "fire",
             "lightning",
-            null,
+            "sword",
             null
         ],
         "inventory": [
@@ -199,9 +199,9 @@
         "skills": {
             "resistance": 1
         },
-        "level": 5,
-        "xp": 175,
-        "unused_sp": 1,
+        "level": 4,
+        "xp": 290,
+        "unused_sp": 0,
         "coins": 0,
         "class": "mage"
     }

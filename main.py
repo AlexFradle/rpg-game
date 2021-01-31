@@ -1,6 +1,7 @@
 from os import environ, getcwd
 from os.path import isfile
 
+# Checks to see if all project files are present
 for file in [
     "a_star.py", "board.py", "constants.py", "data_loader.py", "entities.py",
     "gns.py", "help.html", "items.py", "main.py", "maze_creator.py", "network.py",
@@ -11,6 +12,7 @@ for file in [
         print(f"FileNotFoundError: {file} doesn't exist")
         exit()
 
+# Checks to see if all libraries are installed
 try:
     import pygame
     from PIL import Image
@@ -28,7 +30,7 @@ from data_loader import DataLoader
 from maze_creator import MazeCreator
 from constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAIN_ASSET_PATH, BEZIER_POINT_COLOUR, GNS_IP, \
     GNS_PORT, SELECT_MENU_WIDTH, MENU_WIDTH, MENU_HEIGHT, SELECT_MENU_HEIGHT, GAME_TITLE, TEXT_COLOUR, RESPAWN_TIME, \
-    LEVEL_CHANGE_TIME, DISPLAY_BACKGROUND
+    LEVEL_CHANGE_TIME, DISPLAY_BACKGROUND, BASE_PATH
 from random import randint
 from utils import line_collide
 from items import ItemDrop
@@ -41,6 +43,7 @@ from typing import Union
 from string import ascii_letters
 from random import choice
 from time import time
+
 pygame.init()
 
 environ["SDL_VIDEO_CENTERED"] = "1"
@@ -70,7 +73,7 @@ class Display(pygame.Surface):
         ])
         self.pause_menu = Menu(WINDOW_WIDTH // 2 - (MENU_WIDTH // 2), WINDOW_HEIGHT // 2 - (MENU_HEIGHT // 2), [
             ("Resume", lambda: exec("TitleScreen.game.show_menu = False", globals())),
-            ("Help", lambda: exec("")),
+            ("Help", lambda: exec(f"webbrowser.open('file://{BASE_PATH}help.html')", globals())),
             ("Quit", lambda: exec(
                 "TitleScreen.game.running = False;"
                 "TitleScreen.start_single_game = False;"
@@ -138,7 +141,7 @@ class Game:
         self.font = pygame.font.SysFont("Courier", 15, True)
 
         # Create entities
-        self.player = Player(name, 1, self.font.render(name, True, TEXT_COLOUR))
+        self.player = Player(name, 1)
         self.enemies = {i: MediumEnemy((380 * randint(1, 5)) - 190, (380 * randint(1, 5)) - 190, self.player, self.is_host) for i in range(2)}
 
         # Misc Variables
@@ -404,12 +407,11 @@ class Game:
                             inv_collide_data = self.inv_collide(self.inv, *pygame.mouse.get_pos())
                             if inv_collide_data is not None:
                                 pos, space = inv_collide_data
-                                # TODO: Add this if in after testing to stop moving armor to hotbar
-                                # if DataLoader.possible_items[space[0][1]]["item_type"] not in ["armor", "consumable"]:
-                                DataLoader.change_file("remove_from_hotbar", self.num_pos[event.key] - 1)
-                                DataLoader.change_file("add_to_hotbar", space[0][1], self.num_pos[event.key] - 1)
-                                DataLoader.change_file("remove_from_inv", pos)
-                                DataLoader.change_file("add_to_inv", self.hotbar[self.num_pos[event.key] - 1][1], pos)
+                                if DataLoader.possible_items[space[0][1]]["item_type"] not in ["armor", "consumable"]:
+                                    DataLoader.change_file("remove_from_hotbar", self.num_pos[event.key] - 1)
+                                    DataLoader.change_file("add_to_hotbar", space[0][1], self.num_pos[event.key] - 1)
+                                    DataLoader.change_file("remove_from_inv", pos)
+                                    DataLoader.change_file("add_to_inv", self.hotbar[self.num_pos[event.key] - 1][1], pos)
 
                     # Movement keys
                     elif event.key == pygame.K_d and not self.show_menu:
@@ -806,7 +808,7 @@ class Game:
             # Draw other players to the screen
             for key, op in list(self.other_players.items()):
                 if op.is_alive:
-                    op.update()
+                    op.update(self.font)
                     self.board.blit(op, (op.x, op.y))
                 elif op.lives > 0:
                     pygame.draw.circle(
@@ -827,7 +829,7 @@ class Game:
             # Draw player to screen
             if self.player.is_alive:
                 mx, my = pygame.mouse.get_pos()
-                self.player.update(mx, my)
+                self.player.update(mx, my, self.font)
                 self.display.blit(self.player, (self.player.x, self.player.y))
             elif self.player.lives > 0:
                 self.player.circle_stage = int(time() - time_of_death) * 2
@@ -974,8 +976,6 @@ class Game:
         if not self.is_host and not self.is_singleplayer:
             self.client.sock.close()
 
-        pygame.image.save(self.board, "board_print.png")
-
 
 class TitleScreen:
     display = Display(width, height)
@@ -998,13 +998,18 @@ class TitleScreen:
     select_menu_font = pygame.font.SysFont("Courier", 20, True)
 
     @classmethod
-    def run_game(cls):
+    def run_game(cls) -> None:
+        """
+        The main menu loop
+        :return: None
+        """
         while cls.game_on:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     cls.game_on = False
 
                 if event.type == pygame.KEYDOWN:
+                    # Close current interface
                     if event.key == pygame.K_ESCAPE:
                         cls.join_multiplayer_pressed = False
                         cls.start_screen = True
@@ -1030,6 +1035,7 @@ class TitleScreen:
                                 break
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
+                    # Checl left click collisions
                     if event.button == 1:
                         if cls.display.message_popup:
                             if cls.display.popup_box.check_pressed(*pygame.mouse.get_pos()):
@@ -1049,6 +1055,7 @@ class TitleScreen:
             window.fill(DISPLAY_BACKGROUND)
 
             if cls.start_screen:
+                # Draw all components of the start screen
                 cls.display.start_menu.update(cls.start_menu_font, *pygame.mouse.get_pos())
                 window.blit(cls.display.start_menu, (cls.display.start_menu.x, cls.display.start_menu.y))
                 cls.display.character_menu = cls.display.refresh_character_menu()
@@ -1073,12 +1080,14 @@ class TitleScreen:
             if cls.start_multiplayer_game:
                 if cls.character_selected is not None:
                     try:
+                        # Connect to the GNS
                         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                         s.connect((GNS_IP, GNS_PORT))
                         process = subprocess.run(["ipconfig"], stdout=subprocess.PIPE)
                         out = process.stdout.decode()
                         ipv4 = out[out.find("IPv4"):][out[out.find("IPv4"):].find("1"):out[out.find("IPv4"):].find("\r")]
                         port = randint(GNS_PORT + 1, 55000)
+                        # Data to send to the GNS
                         req = {
                             "request": "HOST ADD",
                             "payload": {"name": "test game 1", "password": "test password", "address": f"{ipv4}:{port}"}

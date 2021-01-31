@@ -94,8 +94,8 @@ class Board(pygame.Surface):
                 pygame.draw.rect(self, col, cell)
 
 
-width, height = 1920, 1080
-display = pygame.display.set_mode((width, height), pygame.FULLSCREEN)
+width, height = 800, 800
+display = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 board = Board(width, height)
 
@@ -115,7 +115,7 @@ while running:
             elif event.key == pygame.K_RETURN:
                 m = MazeCreator(10, 10)
                 # m = Maze(randrange(20, 150, 2), randrange(20, 150, 2))
-                m.create((0, 0))
+                # m.create((0, 0))
                 board = Board(width, height)
 
     display.fill((0, 0, 0))

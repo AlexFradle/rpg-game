@@ -191,8 +191,9 @@ if __name__ == '__main__':
     # with open("a_star.txt", "w") as f:
     #     f.write(a)
     a_str = AStar(0, 0).solve()
+    print("----------------------------------------------")
     for i in a_str[0]:
-        print(i.x, i.y)
+        print(i.x, i.y, i.f)
     # a_str_c = AStar(0, 0).solve_cpp((1, 1), (9, 9))
     # for i in a_str_c:
     #     print(i)

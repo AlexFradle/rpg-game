@@ -87,5 +87,5 @@ class MazeCreator:
 
 
 if __name__ == '__main__':
-    MazeCreator(10, 10).create((0, 0))
+    MazeCreator(20, 20).create((0, 0))
 

@@ -75,10 +75,10 @@
 #     pygame.display.update()
 #     clock.tick(60)
 
-# import webbrowser
-# from os import getcwd
-#
-# cwd = getcwd().replace("\\", "/") + "/"
-#
-# # webbrowser.open(f"file//{cwd}help.html", new=2)
+import webbrowser
+from os import getcwd
+
+cwd = getcwd().replace("\\", "/") + "/"
+
+webbrowser.open(f"file//{cwd}help.html", new=2)
 # webbrowser.open(f"https://www.google.com", new=2)
